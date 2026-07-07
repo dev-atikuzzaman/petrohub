@@ -62,7 +62,11 @@ export default function AdminPanel({ onClose }) {
 
   async function handleReject(userId) {
     if (!window.confirm('এই অনুরোধ প্রত্যাখ্যান করবেন?')) return;
-    await rejectUser(userId);
+    const { error } = await rejectUser(userId);
+    if (error) {
+      alert('প্রত্যাখ্যান করা যায়নি: ' + error.message);
+      return;
+    }
     loadAll();
   }
 
