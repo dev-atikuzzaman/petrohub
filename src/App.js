@@ -143,6 +143,24 @@ function AppShell() {
         @keyframes fadeIn { from {opacity:0;} to {opacity:1;} }
         @keyframes slideUp { from { opacity:0; transform: translateY(20px);} to {opacity:1; transform:translateY(0);} }
         @keyframes spin { from { transform: rotate(0deg);} to { transform: rotate(360deg);} }
+
+        .bottom-nav-inner {
+          display: flex;
+          min-width: max-content;
+          padding: 0 4px;
+          margin: 0 auto;
+        }
+        .bottom-nav-btn { min-width: 56px; flex-shrink: 0; }
+
+        @media (min-width: 640px) {
+          .bottom-nav-inner {
+            width: 100%;
+            max-width: 900px;
+            min-width: 0;
+            justify-content: space-evenly;
+          }
+          .bottom-nav-btn { flex: 1 1 0; min-width: 0; padding-left: 6px; padding-right: 6px; }
+        }
       `}</style>
 
       {!isOnline && (
@@ -218,17 +236,17 @@ function AppShell() {
         padding: '6px 4px calc(6px + env(safe-area-inset-bottom))', zIndex: 50,
         overflowX: 'auto', overflowY: 'hidden',
       }}>
-        <div style={{ display: 'flex', minWidth: 'max-content', padding: '0 4px' }}>
+        <div className="bottom-nav-inner">
           {tabs.map(({ key, label, icon: Icon }) => (
             <button
               key={key}
+              className="bottom-nav-btn"
               onClick={() => setTab(key)}
               style={{
                 display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 2,
                 background: tab === key ? 'var(--accent-soft)' : 'none',
                 border: 'none', cursor: 'pointer', padding: '6px 10px', borderRadius: 12,
                 color: tab === key ? 'var(--accent)' : 'var(--text-muted)',
-                minWidth: 56, flexShrink: 0,
               }}
             >
               <Icon width={20} height={20} />
