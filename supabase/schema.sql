@@ -244,6 +244,12 @@ create policy "profiles_insert_admin"
   to authenticated
   with check (public.is_admin_user());
 
+-- admin pending (অননুমোদিত) সদস্যের রিকুয়েস্ট প্রত্যাখ্যান/ডিলিট করতে পারবে
+create policy "profiles_delete_admin"
+  on public.profiles for delete
+  to authenticated
+  using (public.is_admin_user());
+
 -- POSTS policies
 create policy "posts_select_all"
   on public.posts for select
