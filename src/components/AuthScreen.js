@@ -67,6 +67,7 @@ const styles = {
   },
   switchRow: { textAlign: 'center', marginTop: 18, fontSize: 13, color: '#64748b' },
   switchLink: { color: '#0ea5e9', fontWeight: 700, cursor: 'pointer', marginLeft: 4 },
+  forgotLink: { textAlign: 'right', fontSize: 12.5, color: '#0ea5e9', fontWeight: 700, cursor: 'pointer', marginTop: -8, marginBottom: 16 },
   error: {
     background: '#fee2e2',
     color: '#dc2626',
@@ -86,8 +87,8 @@ const styles = {
 };
 
 export default function AuthScreen() {
-  const { signIn, signUp } = useAuth();
-  const [mode, setMode] = useState('login'); // 'login' | 'signup'
+  const { signIn, signUp, sendPasswordReset } = useAuth();
+  const [mode, setMode] = useState('login'); // 'login' | 'signup' | 'forgot'
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -95,6 +96,33 @@ export default function AuthScreen() {
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
   const [showPassword, setShowPassword] = useState(false);
+
+  function switchMode(newMode) {
+    setMode(newMode);
+    setError('');
+    setSuccess('');
+  }
+
+  async function handleForgotPassword(e) {
+    e.preventDefault();
+    setError('');
+    setSuccess('');
+
+    if (!email.trim()) {
+      setError('ইমেইল লিখুন');
+      return;
+    }
+
+    setLoading(true);
+    const { error } = await sendPasswordReset(email.trim());
+    setLoading(false);
+
+    if (error) {
+      setError(translateError(error.message));
+    } else {
+      setSuccess('✅ রিসেট লিংক পাঠানো হয়েছে! ইমেইল (বা Spam ফোল্ডার) চেক করুন।');
+    }
+  }
 
   async function handleSubmit(e) {
     e.preventDefault();
@@ -139,6 +167,7 @@ export default function AuthScreen() {
     if (/already registered/i.test(msg)) return 'এই ইমেইল দিয়ে আগেই account আছে, লগইন করুন';
     if (/email/i.test(msg) && /invalid/i.test(msg)) return 'সঠিক ইমেইল দিন';
     if (/email not confirmed/i.test(msg)) return 'ইমেইল ভেরিফাই করা হয়নি। ইনবক্স (বা Spam ফোল্ডার) চেক করে confirmation লিংকে ক্লিক করুন।';
+    if (/rate limit|too many requests/i.test(msg)) return 'একটু বেশি চেষ্টা হয়ে গেছে, কিছুক্ষণ পর আবার চেষ্টা করুন';
     return msg;
   }
 
@@ -152,13 +181,31 @@ export default function AuthScreen() {
         <div style={styles.logo}>🎓</div>
         <h1 style={styles.title}>Petro Knowledge Hub</h1>
         <p style={styles.subtitle}>
-          {mode === 'login' ? 'আপনার একাউন্টে লগইন করুন' : 'নতুন একাউন্ট তৈরি করুন'}
+          {mode === 'login' ? 'আপনার একাউন্টে লগইন করুন' : mode === 'signup' ? 'নতুন একাউন্ট তৈরি করুন' : 'ইমেইল দিন, পাসওয়ার্ড রিসেট করার লিংক পাঠানো হবে'}
         </p>
 
         {error && <div style={styles.error}>{error}</div>}
         {success && <div style={styles.success}>{success}</div>}
 
-        <form onSubmit={handleSubmit}>
+        {mode === 'forgot' ? (
+          <form onSubmit={handleForgotPassword}>
+            <label style={styles.label}>ইমেইল</label>
+            <input
+              style={styles.input}
+              type="email"
+              placeholder="you@example.com"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              required
+              autoComplete="email"
+            />
+
+            <button type="submit" style={styles.button} disabled={loading}>
+              {loading ? <LoaderIcon width={18} height={18} /> : <><MailIcon width={18} height={18} /> রিসেট লিংক পাঠান</>}
+            </button>
+          </form>
+        ) : (
+          <form onSubmit={handleSubmit}>
           {mode === 'signup' && (
             <>
               <label style={styles.label}>পূর্ণ নাম</label>
@@ -208,6 +255,12 @@ export default function AuthScreen() {
             </button>
           </div>
 
+          {mode === 'login' && (
+            <div style={styles.forgotLink} onClick={() => switchMode('forgot')}>
+              পাসওয়ার্ড ভুলে গেছেন?
+            </div>
+          )}
+
           <button type="submit" style={styles.button} disabled={loading}>
             {loading ? (
               <LoaderIcon width={18} height={18} />
@@ -222,20 +275,28 @@ export default function AuthScreen() {
             )}
           </button>
         </form>
+        )}
 
         <div style={styles.switchRow}>
           {mode === 'login' ? (
             <>
               নতুন এখানে?
-              <span style={styles.switchLink} onClick={() => { setMode('signup'); setError(''); setSuccess(''); }}>
+              <span style={styles.switchLink} onClick={() => switchMode('signup')}>
                 Account তৈরি করুন
+              </span>
+            </>
+          ) : mode === 'signup' ? (
+            <>
+              আগে থেকেই account আছে?
+              <span style={styles.switchLink} onClick={() => switchMode('login')}>
+                লগইন করুন
               </span>
             </>
           ) : (
             <>
-              আগে থেকেই account আছে?
-              <span style={styles.switchLink} onClick={() => { setMode('login'); setError(''); setSuccess(''); }}>
-                লগইন করুন
+              পাসওয়ার্ড মনে পড়েছে?
+              <span style={styles.switchLink} onClick={() => switchMode('login')}>
+                লগইনে ফিরে যান
               </span>
             </>
           )}
