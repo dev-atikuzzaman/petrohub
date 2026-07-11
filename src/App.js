@@ -15,6 +15,9 @@ import WebsitesTab from './pages/WebsitesTab';
 import ImportantUpdatesTab from './pages/ImportantUpdatesTab';
 import DocumentsTab from './pages/DocumentsTab';
 import SettingsTab from './pages/SettingsTab';
+import ThemeSwitcher from './components/ThemeSwitcher';
+import TypographyMenu from './components/TypographyMenu';
+import { useTypography } from './lib/TypographyContext';
 import { getAllProfiles, getPostsWithDetails, subscribeToPosts, subscribeToProfiles } from './lib/dataService';
 import { HomeIcon, UsersIcon, ChartIcon, LogOutIcon, ShieldIcon, WifiOffIcon, LoaderIcon, NoteIcon, BellIcon, FolderIcon, GlobeIcon } from './components/Icons';
 
@@ -23,6 +26,7 @@ const SettingsIcon = (p) => <svg width="20" height="20" viewBox="0 0 24 24" fill
 
 function AppShell() {
   const { profile, user, signOut, isAdmin, isApproved, loading: authLoading, passwordRecovery } = useAuth();
+  const { getPageStyle } = useTypography();
   const [tab, setTab] = useState('feed');
   const [members, setMembers] = useState([]);
   const [posts, setPosts] = useState([]);
@@ -125,7 +129,7 @@ function AppShell() {
           </div>
           <button
             onClick={signOut}
-            style={{ padding: '11px 24px', borderRadius: 12, border: '1.5px solid #e2e8f0', background: '#fff', color: '#64748b', fontWeight: 700, cursor: 'pointer', fontSize: 14 }}
+            style={{ padding: '11px 24px', borderRadius: 12, border: '1.5px solid #e2e8f0', background: '#ffffff', color: '#64748b', fontWeight: 700, cursor: 'pointer', fontSize: 14 }}
           >
             লগআউট করুন
           </button>
@@ -167,12 +171,14 @@ function AppShell() {
         <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
           <div style={{ width: 34, height: 34, borderRadius: 10, background: 'var(--accent-gradient)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 16 }}>🎓</div>
           <div>
-            <div style={{ fontWeight: 800, fontSize: 14.5, color: 'var(--text-primary)', lineHeight: 1.1 }}>Petro Knowledge Hub</div>
-            <div style={{ fontSize: 10.5, color: 'var(--text-muted)' }}>{members.length} জন সদস্য</div>
+            <div style={{ fontWeight: 800, fontSize: 15.5, color: 'var(--text-primary)', lineHeight: 1.1 }}>Petro Knowledge Hub</div>
+            <div style={{ fontSize: 11.5, color: 'var(--text-muted)' }}>{members.length} জন সদস্য</div>
           </div>
         </div>
 
         <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+          <TypographyMenu currentPageKey={tab} currentPageLabel={tabs.find((t) => t.key === tab)?.label} />
+          <ThemeSwitcher />
           {isAdmin && (
             <button
               onClick={() => setShowAdminPanel(true)}
@@ -195,7 +201,7 @@ function AppShell() {
 
       <Marquee />
 
-      <main>
+      <main style={getPageStyle(tab)}>
         {dataLoading ? (
           <div style={{ textAlign: 'center', padding: 60 }}>
             <LoaderIcon width={28} height={28} color="var(--accent)" />
@@ -240,7 +246,7 @@ function AppShell() {
               }}
             >
               <Icon width={20} height={20} />
-              <span style={{ fontSize: 9.5, fontWeight: 700, whiteSpace: 'nowrap' }}>{label}</span>
+              <span style={{ fontSize: 10.5, fontWeight: 700, whiteSpace: 'nowrap' }}>{label}</span>
             </button>
           ))}
         </div>
