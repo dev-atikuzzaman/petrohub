@@ -237,6 +237,7 @@ export default function PostCard({ post, currentUser, onUpdate, onOpenProfile })
             style={{
               width: '100%', border: `1.5px solid var(--accent)`, borderRadius: 12, padding: 10,
               fontSize: 14.5, resize: 'none', outline: 'none', boxSizing: 'border-box', fontFamily: 'inherit',
+              background: 'var(--bg-surface-alt)', color: 'var(--text-primary)',
             }}
           />
           <div style={{ display: 'flex', gap: 8, marginTop: 8, justifyContent: 'flex-end' }}>
@@ -365,6 +366,7 @@ export default function PostCard({ post, currentUser, onUpdate, onOpenProfile })
                 style={{
                   width: '100%', padding: '9px 36px 9px 12px', borderRadius: 20, border: `1.5px solid var(--border)`,
                   fontSize: 13, outline: 'none', boxSizing: 'border-box',
+                  background: 'var(--bg-surface-alt)', color: 'var(--text-primary)',
                 }}
               />
               <button

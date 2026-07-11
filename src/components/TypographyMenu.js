@@ -65,8 +65,8 @@ export default function TypographyMenu({ currentPageKey, currentPageLabel }) {
       {open && (
         <div style={{
           position: 'absolute', right: 0, top: 42, background: 'var(--bg-surface)', borderRadius: 14,
-          padding: 14, boxShadow: 'var(--shadow-lg)', zIndex: 100, width: 240,
-          border: '1px solid var(--border)',
+          padding: 14, boxShadow: 'var(--shadow-lg)', zIndex: 100, width: 240, maxWidth: 'calc(100vw - 24px)',
+          border: '1px solid var(--border)', boxSizing: 'border-box',
         }}>
           <div style={{ fontSize: 12, fontWeight: 800, color: 'var(--text-primary)', marginBottom: 10 }}>
             লেখার ধরন কাস্টমাইজ করুন

@@ -129,6 +129,7 @@ export default function CreatePostModal({ currentUser, onClose, onCreated }) {
           style={{
             width: '100%', border: `1.5px solid var(--border)`, borderRadius: 14, padding: 12,
             fontSize: 14, resize: 'none', outline: 'none', boxSizing: 'border-box', fontFamily: 'inherit',
+            background: 'var(--bg-surface-alt)', color: 'var(--text-primary)',
           }}
         />
 
