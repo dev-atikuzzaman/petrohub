@@ -54,8 +54,8 @@ export async function getPostsWithDetails() {
     .select(`
       *,
       author:profiles!posts_user_id_fkey ( id, name, avatar_url, designation, company, current_company ),
-      comments ( id, text, created_at, parent_id, user_id, author:profiles!comments_user_id_fkey ( id, name, avatar_url ) ),
-      reactions ( id, emoji, user_id, user:profiles!reactions_user_id_fkey ( id, name, avatar_url ) )
+      comments ( id, text, created_at, parent_id, user_id, author:profiles!comments_user_id_fkey ( id, name, avatar_url ), comment_reactions ( id, emoji, user_id ) ),
+      reactions ( id, emoji, user_id )
     `)
     .order('created_at', { ascending: false });
 
@@ -173,6 +173,40 @@ export async function toggleReaction(postId, userId, emoji) {
 }
 
 // ============================================================
+// COMMENT REACTIONS (মন্তব্যে ইমোজি রিয়্যাকশন)
+// ============================================================
+export async function toggleCommentReaction(commentId, userId, emoji) {
+  const { data: existing } = await supabase
+    .from('comment_reactions')
+    .select('*')
+    .eq('comment_id', commentId)
+    .eq('user_id', userId)
+    .maybeSingle();
+
+  if (existing) {
+    if (existing.emoji === emoji) {
+      const { error } = await supabase.from('comment_reactions').delete().eq('id', existing.id);
+      return { action: 'removed', error };
+    } else {
+      const { data, error } = await supabase
+        .from('comment_reactions')
+        .update({ emoji })
+        .eq('id', existing.id)
+        .select()
+        .single();
+      return { action: 'updated', data, error };
+    }
+  } else {
+    const { data, error } = await supabase
+      .from('comment_reactions')
+      .insert({ comment_id: commentId, user_id: userId, emoji })
+      .select()
+      .single();
+    return { action: 'added', data, error };
+  }
+}
+
+// ============================================================
 // REALTIME SUBSCRIPTIONS
 // ============================================================
 // একটাই channel এ posts, comments, reactions, profiles — সব টেবিল
@@ -190,6 +224,7 @@ export function subscribeToAppChanges(onChange) {
     .on('postgres_changes', { event: '*', schema: 'public', table: 'posts' }, wrappedOnChange)
     .on('postgres_changes', { event: '*', schema: 'public', table: 'comments' }, wrappedOnChange)
     .on('postgres_changes', { event: '*', schema: 'public', table: 'reactions' }, wrappedOnChange)
+    .on('postgres_changes', { event: '*', schema: 'public', table: 'comment_reactions' }, wrappedOnChange)
     .on('postgres_changes', { event: '*', schema: 'public', table: 'profiles' }, wrappedOnChange)
     .subscribe((status) => {
       if (status === 'SUBSCRIBED') {
