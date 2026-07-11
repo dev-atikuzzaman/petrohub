@@ -1,7 +1,7 @@
 // src/components/PostCard.js
 import React, { useState, useEffect, useRef } from 'react';
 import Avatar from './Avatar';
-import { HeartIcon, CommentIcon, SendIcon, TrashIcon, MoreIcon, EditIcon, LockIcon, GlobeIcon, CheckIcon, LoaderIcon } from './Icons';
+import { HeartIcon, CommentIcon, SendIcon, TrashIcon, MoreIcon, EditIcon, LockIcon, GlobeIcon, CheckIcon, LoaderIcon, XIcon } from './Icons';
 import { toggleReaction, createComment, deletePost, deleteComment, updatePost } from '../lib/dataService';
 
 const EMOJIS = ['👍', '❤️', '😂', '😮', '😢', '🔥'];
@@ -33,6 +33,8 @@ export default function PostCard({ post, currentUser, onUpdate, onOpenProfile })
   const [savingEdit, setSavingEdit] = useState(false);
   const [showPrivacyMenu, setShowPrivacyMenu] = useState(false);
   const [updatingPrivacy, setUpdatingPrivacy] = useState(false);
+  const [showReactors, setShowReactors] = useState(false);
+  const [reactorsFilter, setReactorsFilter] = useState('all');
 
   const menuRef = useRef(null);
   const emojiRef = useRef(null);
@@ -274,7 +276,10 @@ export default function PostCard({ post, currentUser, onUpdate, onOpenProfile })
       )}
 
       {totalReactions > 0 && (
-        <div style={{ display: 'flex', gap: 4, marginTop: 12, fontSize: 13, color: 'var(--text-secondary)' }}>
+        <div
+          onClick={() => { setReactorsFilter('all'); setShowReactors(true); }}
+          style={{ display: 'flex', gap: 4, marginTop: 12, fontSize: 13, color: 'var(--text-secondary)', cursor: 'pointer', width: 'fit-content' }}
+        >
           {Object.entries(reactionCounts).map(([emoji, count]) => (
             <span key={emoji}>{emoji} {count}</span>
           ))}
@@ -379,6 +384,66 @@ export default function PostCard({ post, currentUser, onUpdate, onOpenProfile })
               >
                 <SendIcon width={16} height={16} />
               </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {showReactors && (
+        <div
+          onClick={() => setShowReactors(false)}
+          style={{ position: 'fixed', inset: 0, background: 'rgba(15,23,42,0.6)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000, padding: 16, backdropFilter: 'blur(4px)' }}
+        >
+          <div
+            onClick={(e) => e.stopPropagation()}
+            style={{ background: 'var(--bg-surface)', borderRadius: 20, width: '100%', maxWidth: 400, maxHeight: '70vh', display: 'flex', flexDirection: 'column', boxShadow: 'var(--shadow-lg)', animation: 'slideUp 0.3s ease' }}
+          >
+            <div style={{ display: 'flex', alignItems: 'center', gap: 4, padding: '14px 16px 10px', borderBottom: `1px solid var(--border-soft)` }}>
+              <button
+                onClick={() => setReactorsFilter('all')}
+                style={{
+                  padding: '6px 12px', borderRadius: 20, border: 'none', cursor: 'pointer', fontSize: 13, fontWeight: 700,
+                  background: reactorsFilter === 'all' ? 'var(--bg-surface-alt)' : 'none',
+                  color: reactorsFilter === 'all' ? 'var(--text-primary)' : 'var(--text-secondary)',
+                }}
+              >
+                সব {totalReactions}
+              </button>
+              {Object.entries(reactionCounts).map(([emoji, count]) => (
+                <button
+                  key={emoji}
+                  onClick={() => setReactorsFilter(emoji)}
+                  style={{
+                    padding: '6px 10px', borderRadius: 20, border: 'none', cursor: 'pointer', fontSize: 13, fontWeight: 700,
+                    display: 'flex', alignItems: 'center', gap: 4,
+                    background: reactorsFilter === emoji ? 'var(--bg-surface-alt)' : 'none',
+                    color: reactorsFilter === emoji ? 'var(--text-primary)' : 'var(--text-secondary)',
+                  }}
+                >
+                  <span>{emoji}</span> {count}
+                </button>
+              ))}
+              <button onClick={() => setShowReactors(false)} style={{ marginLeft: 'auto', background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-muted)', padding: 4, display: 'flex' }}>
+                <XIcon width={18} height={18} />
+              </button>
+            </div>
+
+            <div style={{ overflowY: 'auto', padding: '6px 8px' }}>
+              {(post.reactions || [])
+                .filter((r) => reactorsFilter === 'all' || r.emoji === reactorsFilter)
+                .map((r) => (
+                  <div
+                    key={r.id}
+                    onClick={() => { onOpenProfile && onOpenProfile(r.user); setShowReactors(false); }}
+                    style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '8px 10px', borderRadius: 12, cursor: 'pointer' }}
+                    onMouseEnter={(e) => (e.currentTarget.style.background = 'var(--bg-surface-alt)')}
+                    onMouseLeave={(e) => (e.currentTarget.style.background = 'none')}
+                  >
+                    <Avatar name={r.user?.name} src={r.user?.avatar_url} size={38} />
+                    <div style={{ flex: 1, fontSize: 14, fontWeight: 600, color: 'var(--text-primary)' }}>{r.user?.name || 'অজানা'}</div>
+                    <span style={{ fontSize: 18 }}>{r.emoji}</span>
+                  </div>
+                ))}
             </div>
           </div>
         </div>
