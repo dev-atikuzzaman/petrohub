@@ -55,7 +55,7 @@ export async function getPostsWithDetails() {
       *,
       author:profiles!posts_user_id_fkey ( id, name, avatar_url, designation, company, current_company ),
       comments ( id, text, created_at, parent_id, user_id, author:profiles!comments_user_id_fkey ( id, name, avatar_url ) ),
-      reactions ( id, emoji, user_id )
+      reactions ( id, emoji, user_id, user:profiles!reactions_user_id_fkey ( id, name, avatar_url ) )
     `)
     .order('created_at', { ascending: false });
 
