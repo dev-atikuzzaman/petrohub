@@ -10,9 +10,9 @@ export function ThemeProvider({ children }) {
     // localStorage থেকে আগে সিলেক্ট করা থিম পড়া, না থাকলে 'light' ডিফল্ট
     try {
       const saved = localStorage.getItem(STORAGE_KEY);
-      return saved && THEMES[saved] ? saved : 'light';
+      return saved && THEMES[saved] ? saved : 'premium';
     } catch {
-      return 'light';
+      return 'premium';
     }
   });
 
@@ -29,6 +29,10 @@ export function ThemeProvider({ children }) {
 
     // body background ও সাথে সাথে বদলানো (flash এড়াতে)
     document.body.style.background = THEMES[themeKey].colors.bgBase;
+
+    // ডার্ক থিমে native form control (dropdown, checkbox ইত্যাদি) সঠিকভাবে
+    // দেখানোর জন্য color-scheme সেট করা — Light থিমে এটা normal থাকে
+    document.documentElement.style.colorScheme = themeKey === 'light' ? 'light' : 'dark';
 
     try {
       localStorage.setItem(STORAGE_KEY, themeKey);

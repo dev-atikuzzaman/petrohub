@@ -126,9 +126,49 @@ export const THEMES = {
       shadowLg: '0 20px 60px rgba(0,0,0,0.65)',
     },
   },
+  premium: {
+    label: 'Premium Forest',
+    emoji: '🌿',
+    colors: {
+      // akibbd.com এর "Deep Forest Green" aesthetic থেকে অনুপ্রাণিত —
+      // গাঢ় সবুজ-কালো gradient background, গ্লাস-কার্ড, সোনালি/টিল অ্যাকসেন্ট
+      bgBase: 'linear-gradient(160deg, #060f0b 0%, #0a2118 42%, #0e3524 100%)',
+      bgSurface: '#0f2a1e',
+      bgSurfaceAlt: '#15382a',
+      bgHeader: 'rgba(7,20,14,0.88)',
+
+      textPrimary: '#eafff2',
+      textSecondary: '#a4d9bf',
+      textMuted: '#72a893',
+      textInverse: '#06150e',
+
+      border: 'rgba(110,210,165,0.18)',
+      borderSoft: 'rgba(110,210,165,0.08)',
+      borderFocus: '#2bd9ac',
+
+      accent: '#2bd9ac',
+      accentDark: '#0e7a8f',
+      accentGradient: 'linear-gradient(135deg, #2bd9ac, #f5b942)',
+      accentSoft: 'rgba(43,217,172,0.14)',
+
+      success: '#4ade80',
+      successSoft: 'rgba(74,222,128,0.16)',
+      danger: '#f87171',
+      dangerSoft: 'rgba(248,113,113,0.16)',
+      warning: '#fbbf24',
+      warningSoft: 'rgba(251,191,36,0.16)',
+      info: '#38bdf8',
+      infoSoft: 'rgba(56,189,248,0.16)',
+      adminColor: '#c792ea',
+      adminSoft: 'rgba(199,146,234,0.18)',
+
+      shadow: '0 2px 20px rgba(0,0,0,0.35)',
+      shadowLg: '0 24px 70px rgba(0,0,0,0.55)',
+    },
+  },
 };
 
-export const THEME_ORDER = ['light', 'dark', 'andromeda'];
+export const THEME_ORDER = ['premium', 'light', 'dark', 'andromeda'];
 
 /**
  * একটা থিমের colors object থেকে CSS variable string বানায়,
