@@ -73,7 +73,7 @@ export default function AdminPanel({ onClose }) {
 
   return (
     <div style={{ position: 'fixed', inset: 0, background: 'rgba(15,23,42,0.6)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000, padding: 16, backdropFilter: 'blur(4px)' }}>
-      <div style={{ background: 'var(--bg-surface)', borderRadius: 22, width: '100%', maxWidth: 600, maxHeight: '88vh', overflowY: 'auto' }}>
+      <div style={{ background: 'var(--bg-surface)', borderRadius: 22, width: '100%', maxWidth: 600, maxHeight: '88vh', overflowY: 'auto', overflowX: 'hidden', boxSizing: 'border-box' }}>
         <div style={{ position: 'sticky', top: 0, background: 'var(--bg-surface)', borderBottom: `1px solid var(--border-soft)`, padding: '16px 20px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', zIndex: 10 }}>
           <h3 style={{ margin: 0, fontSize: 17, fontWeight: 800 }}>🛡️ Admin Panel</h3>
           <button onClick={onClose} style={{ background: 'var(--border-soft)', border: 'none', borderRadius: '50%', width: 30, height: 30, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
@@ -131,11 +131,11 @@ export default function AdminPanel({ onClose }) {
             <>
               <p style={{ fontSize: 12.5, color: 'var(--text-secondary)', marginTop: 0 }}>এখানে যাদের ইমেইল যোগ করবেন, তারা signup করলে স্বয়ংক্রিয়ভাবে approved হয়ে যাবে।</p>
               {error && <div style={{ background: 'var(--danger-soft)', color: 'var(--danger)', padding: '8px 12px', borderRadius: 8, fontSize: 13, marginBottom: 10 }}>{error}</div>}
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8, marginBottom: 10 }}>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, minmax(0, 1fr))', gap: 8, marginBottom: 10 }}>
                 {fields.map(([key, label]) => (
                   <input key={key} placeholder={label} value={form[key]}
                     onChange={(e) => setForm({ ...form, [key]: e.target.value })}
-                    style={{ padding: '9px 10px', borderRadius: 9, border: `1.5px solid var(--border)`, fontSize: 13, outline: 'none' }}
+                    style={{ width: '100%', minWidth: 0, boxSizing: 'border-box', padding: '9px 10px', borderRadius: 9, border: `1.5px solid var(--border)`, fontSize: 13, outline: 'none', background: 'var(--bg-surface-alt)', color: 'var(--text-primary)' }}
                   />
                 ))}
               </div>
@@ -150,11 +150,11 @@ export default function AdminPanel({ onClose }) {
                 <div key={inv.id} style={{ borderRadius: 12, background: 'var(--bg-surface-alt)', marginBottom: 8, padding: 12 }}>
                   {editingInvite === inv.id ? (
                     <>
-                      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 6, marginBottom: 8 }}>
+                      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, minmax(0, 1fr))', gap: 6, marginBottom: 8 }}>
                         {fields.map(([key, label]) => (
                           <input key={key} placeholder={label} value={editForm[key] || ''}
                             onChange={(e) => setEditForm({ ...editForm, [key]: e.target.value })}
-                            style={{ padding: '7px 9px', borderRadius: 8, border: `1.5px solid var(--border)`, fontSize: 12.5, outline: 'none' }}
+                            style={{ width: '100%', minWidth: 0, boxSizing: 'border-box', padding: '7px 9px', borderRadius: 8, border: `1.5px solid var(--border)`, fontSize: 12.5, outline: 'none', background: 'var(--bg-surface)', color: 'var(--text-primary)' }}
                           />
                         ))}
                       </div>

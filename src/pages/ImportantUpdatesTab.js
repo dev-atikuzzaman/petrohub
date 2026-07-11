@@ -182,7 +182,7 @@ export default function ImportantUpdatesTab({ currentUser }) {
             <textarea placeholder="বিস্তারিত লিখুন... *" rows={4} value={form.body} onChange={(e) => setForm({ ...form, body: e.target.value })}
               style={{ width: '100%', padding: '10px 12px', borderRadius: 12, border: '1.5px solid var(--border)', fontSize: 14, outline: 'none', resize: 'none', fontFamily: 'inherit', marginBottom: 10, boxSizing: 'border-box', background: 'var(--bg-surface)', color: 'var(--text-primary)' }} />
 
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10, marginBottom: 10 }}>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, minmax(0, 1fr))', gap: 10, marginBottom: 10 }}>
               <div>
                 <label style={{ fontSize: 12, fontWeight: 600, color: 'var(--text-secondary)', display: 'block', marginBottom: 4 }}>অগ্রাধিকার</label>
                 <select value={form.priority} onChange={(e) => setForm({ ...form, priority: e.target.value })}

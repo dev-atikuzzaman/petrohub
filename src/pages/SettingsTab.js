@@ -24,7 +24,7 @@ function Section({ title, icon, children, action }) {
 const dropdownStyle = {
   width: '100%', padding: '11px 12px', borderRadius: 12, border: '1.5px solid var(--border)',
   fontSize: 13.5, outline: 'none', boxSizing: 'border-box', fontFamily: 'inherit', fontWeight: 600,
-  background: 'var(--bg-surface-alt)', color: 'var(--text-primary)', cursor: 'pointer',
+  background: 'var(--bg-surface-alt)', color: 'var(--text-primary)', cursor: 'pointer', minWidth: 0,
 };
 
 const fieldLabelStyle = { fontSize: 12, fontWeight: 700, color: 'var(--text-muted)', marginBottom: 6, display: 'block' };
@@ -36,7 +36,7 @@ function ThemeSection() {
       <div style={{ fontSize: 12.5, color: 'var(--text-secondary)', marginBottom: 12 }}>
         পুরো অ্যাপের রঙ ও ব্যাকগ্রাউন্ড থিম বেছে নিন
       </div>
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: 10 }}>
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, minmax(0, 1fr))', gap: 10, minWidth: 0 }}>
         {themeOrder.map((key) => {
           const t = themes[key];
           const active = key === themeKey;
@@ -48,11 +48,11 @@ function ThemeSection() {
                 display: 'flex', alignItems: 'center', gap: 8, padding: '12px 14px', borderRadius: 14,
                 border: active ? '1.5px solid var(--accent)' : '1.5px solid var(--border)',
                 background: active ? 'var(--accent-soft)' : 'var(--bg-surface-alt)',
-                cursor: 'pointer', textAlign: 'left',
+                cursor: 'pointer', textAlign: 'left', minWidth: 0, boxSizing: 'border-box',
               }}
             >
-              <span style={{ fontSize: 18 }}>{t.emoji}</span>
-              <span style={{ fontSize: 13, fontWeight: 700, color: active ? 'var(--accent)' : 'var(--text-primary)', flex: 1 }}>{t.label}</span>
+              <span style={{ fontSize: 18, flexShrink: 0 }}>{t.emoji}</span>
+              <span style={{ fontSize: 13, fontWeight: 700, color: active ? 'var(--accent)' : 'var(--text-primary)', flex: 1, minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{t.label}</span>
               {active && <CheckIcon width={14} height={14} color="var(--accent)" />}
             </button>
           );
@@ -107,26 +107,26 @@ function TypographySection() {
         </label>
       )}
 
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12, opacity: !isGlobal && !hasOverride ? 0.55 : 1 }}>
-        <div>
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, minmax(0, 1fr))', gap: 12, minWidth: 0, opacity: !isGlobal && !hasOverride ? 0.55 : 1 }}>
+        <div style={{ minWidth: 0 }}>
           <label style={fieldLabelStyle}>ফন্ট</label>
           <select style={dropdownStyle} value={scope.font || 'system'} onChange={(e) => updateField('font', e.target.value)}>
             {FONT_ORDER.map((k) => <option key={k} value={k}>{fontOptions[k].label}</option>)}
           </select>
         </div>
-        <div>
+        <div style={{ minWidth: 0 }}>
           <label style={fieldLabelStyle}>লেখার সাইজ</label>
           <select style={dropdownStyle} value={scope.size || 'normal'} onChange={(e) => updateField('size', e.target.value)}>
             {SIZE_ORDER.map((k) => <option key={k} value={k}>{sizeOptions[k].label}</option>)}
           </select>
         </div>
-        <div>
+        <div style={{ minWidth: 0 }}>
           <label style={fieldLabelStyle}>বোল্ডনেস</label>
           <select style={dropdownStyle} value={scope.weight || 'normal'} onChange={(e) => updateField('weight', e.target.value)}>
             {WEIGHT_ORDER.map((k) => <option key={k} value={k}>{weightOptions[k].label}</option>)}
           </select>
         </div>
-        <div>
+        <div style={{ minWidth: 0 }}>
           <label style={fieldLabelStyle}>লেখার রঙ</label>
           <select style={dropdownStyle} value={scope.color || 'default'} onChange={(e) => updateField('color', e.target.value)}>
             {TEXT_COLOR_ORDER.map((k) => <option key={k} value={k}>{TEXT_COLOR_OPTIONS[k].label}</option>)}
