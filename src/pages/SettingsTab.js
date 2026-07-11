@@ -1,7 +1,10 @@
 // src/pages/SettingsTab.js
 import React, { useState } from 'react';
 import { useAuth } from '../lib/AuthContext';
-import { EyeIcon, EyeOffIcon, LoaderIcon, LockIcon, EditIcon, PlusIcon } from '../components/Icons';
+import { useTheme } from '../lib/ThemeContext';
+import { useTypography } from '../lib/TypographyContext';
+import { FONT_ORDER, SIZE_ORDER, WEIGHT_ORDER, TEXT_COLOR_ORDER, TEXT_COLOR_OPTIONS, PAGE_OPTIONS } from '../lib/typography';
+import { EyeIcon, EyeOffIcon, LoaderIcon, LockIcon, EditIcon, PlusIcon, CheckIcon } from '../components/Icons';
 
 function Section({ title, icon, children, action }) {
   return (
@@ -15,6 +18,126 @@ function Section({ title, icon, children, action }) {
         {children}
       </div>
     </div>
+  );
+}
+
+const dropdownStyle = {
+  width: '100%', padding: '11px 12px', borderRadius: 12, border: '1.5px solid var(--border)',
+  fontSize: 13.5, outline: 'none', boxSizing: 'border-box', fontFamily: 'inherit', fontWeight: 600,
+  background: 'var(--bg-surface-alt)', color: 'var(--text-primary)', cursor: 'pointer',
+};
+
+const fieldLabelStyle = { fontSize: 12, fontWeight: 700, color: 'var(--text-muted)', marginBottom: 6, display: 'block' };
+
+function ThemeSection() {
+  const { themeKey, setTheme, themeOrder, themes } = useTheme();
+  return (
+    <Section title="থিম" icon="🎨">
+      <div style={{ fontSize: 12.5, color: 'var(--text-secondary)', marginBottom: 12 }}>
+        পুরো অ্যাপের রঙ ও ব্যাকগ্রাউন্ড থিম বেছে নিন
+      </div>
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: 10 }}>
+        {themeOrder.map((key) => {
+          const t = themes[key];
+          const active = key === themeKey;
+          return (
+            <button
+              key={key}
+              onClick={() => setTheme(key)}
+              style={{
+                display: 'flex', alignItems: 'center', gap: 8, padding: '12px 14px', borderRadius: 14,
+                border: active ? '1.5px solid var(--accent)' : '1.5px solid var(--border)',
+                background: active ? 'var(--accent-soft)' : 'var(--bg-surface-alt)',
+                cursor: 'pointer', textAlign: 'left',
+              }}
+            >
+              <span style={{ fontSize: 18 }}>{t.emoji}</span>
+              <span style={{ fontSize: 13, fontWeight: 700, color: active ? 'var(--accent)' : 'var(--text-primary)', flex: 1 }}>{t.label}</span>
+              {active && <CheckIcon width={14} height={14} color="var(--accent)" />}
+            </button>
+          );
+        })}
+      </div>
+    </Section>
+  );
+}
+
+function TypographySection() {
+  const { global, pages, setGlobal, setPageOverride, clearPageOverride, getEffective, fontOptions, sizeOptions, weightOptions } = useTypography();
+  const [selectedPage, setSelectedPage] = useState('__global__');
+
+  const isGlobal = selectedPage === '__global__';
+  const hasOverride = !isGlobal && !!pages[selectedPage];
+  const effective = isGlobal ? global : getEffective(selectedPage);
+  const scope = hasOverride ? pages[selectedPage] : global;
+
+  function updateField(field, value) {
+    if (isGlobal) {
+      setGlobal({ [field]: value });
+    } else if (hasOverride) {
+      setPageOverride(selectedPage, { [field]: value });
+    } else {
+      // এখনো override নেই — টগল অন করে দেওয়া হচ্ছে যাতে dropdown সাথে সাথে কাজ করে
+      setPageOverride(selectedPage, { font: effective.font, size: effective.size, weight: effective.weight, color: effective.color, [field]: value });
+    }
+  }
+
+  return (
+    <Section title="লেখার ধরন (Typography)" icon="🔤">
+      <div style={{ fontSize: 12.5, color: 'var(--text-secondary)', marginBottom: 14, lineHeight: 1.6 }}>
+        ফন্ট, লেখার সাইজ, বোল্ডনেস ও রঙ — প্রতিটা পেজের জন্য আলাদাভাবে বা পুরো অ্যাপ জুড়ে একসাথে সেট করুন।
+      </div>
+
+      <label style={fieldLabelStyle}>কোন পেজের জন্য সেট করছেন</label>
+      <select style={{ ...dropdownStyle, marginBottom: 14 }} value={selectedPage} onChange={(e) => setSelectedPage(e.target.value)}>
+        {PAGE_OPTIONS.map((p) => <option key={p.key} value={p.key}>{p.label}</option>)}
+      </select>
+
+      {!isGlobal && (
+        <label style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 14, cursor: 'pointer' }}>
+          <input
+            type="checkbox"
+            checked={hasOverride}
+            onChange={(e) => e.target.checked ? setPageOverride(selectedPage, { font: effective.font, size: effective.size, weight: effective.weight, color: effective.color }) : clearPageOverride(selectedPage)}
+            style={{ width: 16, height: 16, cursor: 'pointer' }}
+          />
+          <span style={{ fontSize: 12.5, color: 'var(--text-secondary)', fontWeight: 600 }}>
+            এই পেজের জন্য আলাদা সেটিং চালু করুন (নাহলে গ্লোবাল ডিফল্ট প্রযোজ্য হবে)
+          </span>
+        </label>
+      )}
+
+      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12, opacity: !isGlobal && !hasOverride ? 0.55 : 1 }}>
+        <div>
+          <label style={fieldLabelStyle}>ফন্ট</label>
+          <select style={dropdownStyle} value={scope.font || 'system'} onChange={(e) => updateField('font', e.target.value)}>
+            {FONT_ORDER.map((k) => <option key={k} value={k}>{fontOptions[k].label}</option>)}
+          </select>
+        </div>
+        <div>
+          <label style={fieldLabelStyle}>লেখার সাইজ</label>
+          <select style={dropdownStyle} value={scope.size || 'normal'} onChange={(e) => updateField('size', e.target.value)}>
+            {SIZE_ORDER.map((k) => <option key={k} value={k}>{sizeOptions[k].label}</option>)}
+          </select>
+        </div>
+        <div>
+          <label style={fieldLabelStyle}>বোল্ডনেস</label>
+          <select style={dropdownStyle} value={scope.weight || 'normal'} onChange={(e) => updateField('weight', e.target.value)}>
+            {WEIGHT_ORDER.map((k) => <option key={k} value={k}>{weightOptions[k].label}</option>)}
+          </select>
+        </div>
+        <div>
+          <label style={fieldLabelStyle}>লেখার রঙ</label>
+          <select style={dropdownStyle} value={scope.color || 'default'} onChange={(e) => updateField('color', e.target.value)}>
+            {TEXT_COLOR_ORDER.map((k) => <option key={k} value={k}>{TEXT_COLOR_OPTIONS[k].label}</option>)}
+          </select>
+        </div>
+      </div>
+
+      <div style={{ fontSize: 11.5, color: 'var(--text-muted)', marginTop: 14, lineHeight: 1.6 }}>
+        💡 Times New Roman, Nikosh, NikoshBan, Siyam Rupali — এই দাপ্তরিক ফন্টগুলো যদি আপনার ডিভাইসে ইনস্টল করা থাকে তাহলে সেগুলো সঠিকভাবে দেখাবে, নাহলে কাছাকাছি বাংলা ফন্টে ফিরে যাবে।
+      </div>
+    </Section>
   );
 }
 
@@ -74,6 +197,10 @@ export default function SettingsTab({ currentUser, onEditProfile }) {
         <h2 style={{ margin: '0 0 4px', fontSize: 18, fontWeight: 800, color: 'var(--text-primary)' }}>সেটিংস</h2>
         <div style={{ fontSize: 12, color: 'var(--text-muted)' }}>{currentUser.email}</div>
       </div>
+
+      {/* থিম ও লেখার ধরন */}
+      <ThemeSection />
+      <TypographySection />
 
       {/* ১. পাসওয়ার্ড পরিবর্তন */}
       <Section title="পাসওয়ার্ড পরিবর্তন" icon="🔐">

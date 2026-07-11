@@ -3,11 +3,14 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { getNotes, createNote, updateNote, deleteNote } from '../lib/dataService';
 import { PlusIcon, EditIcon, TrashIcon, CheckIcon, LoaderIcon } from '../components/Icons';
 
+// এই রঙগুলো সম্পূর্ণ CSS ভ্যারিয়েবল-ভিত্তিক, তাই Light ও Premium Forest —
+// দুই থিমেই স্বয়ংক্রিয়ভাবে মানানসই ও readable থাকে (আগে হার্ডকোড করা পেস্টেল
+// রঙ ডার্ক থিমে সাদা প্যাচ হয়ে ফুটে উঠত)
 const NOTE_COLORS = {
-  green: { bg: 'var(--success-soft)', border: '#86efac', dot: 'var(--success)', text: '#14532d' },
-  blue:  { bg: '#dbeafe', border: '#93c5fd', dot: '#1d4ed8', text: '#1e3a8a' },
-  red:   { bg: 'var(--danger-soft)', border: '#fca5a5', dot: 'var(--danger)', text: '#7f1d1d' },
-  gray:  { bg: 'var(--border-soft)', border: '#cbd5e1', dot: 'var(--text-secondary)', text: 'var(--text-primary)' },
+  green: { bg: 'var(--success-soft)', border: 'var(--success)', dot: 'var(--success)', text: 'var(--text-primary)' },
+  blue:  { bg: 'var(--info-soft)', border: 'var(--info)', dot: 'var(--info)', text: 'var(--text-primary)' },
+  red:   { bg: 'var(--danger-soft)', border: 'var(--danger)', dot: 'var(--danger)', text: 'var(--text-primary)' },
+  gray:  { bg: 'var(--border-soft)', border: 'var(--border)', dot: 'var(--text-secondary)', text: 'var(--text-primary)' },
 };
 
 function timeAgo(dateStr) {
@@ -93,11 +96,11 @@ export default function NotesTab({ currentUser }) {
               }}>
                 <div style={{ position: 'absolute', top: 10, right: 10, display: 'flex', gap: 4 }}>
                   <button onClick={() => { setEditingNote(note); setForm({ title: note.title, body: note.body, color: note.color }); setShowForm(true); }}
-                    style={{ background: 'rgba(255,255,255,0.7)', border: 'none', cursor: 'pointer', color: 'var(--text-secondary)', padding: 5, borderRadius: 8 }}>
+                    style={{ background: 'var(--bg-surface)', border: '1px solid var(--border-soft)', cursor: 'pointer', color: 'var(--text-secondary)', padding: 5, borderRadius: 8 }}>
                     <EditIcon width={13} height={13} />
                   </button>
                   <button onClick={() => handleDelete(note)}
-                    style={{ background: 'rgba(255,255,255,0.7)', border: 'none', cursor: 'pointer', color: 'var(--danger)', padding: 5, borderRadius: 8 }}>
+                    style={{ background: 'var(--bg-surface)', border: '1px solid var(--border-soft)', cursor: 'pointer', color: 'var(--danger)', padding: 5, borderRadius: 8 }}>
                     <TrashIcon width={13} height={13} />
                   </button>
                 </div>
