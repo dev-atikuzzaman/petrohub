@@ -29,8 +29,8 @@ export default function Avatar({ name, src, size = 44, onClick, ring = false }) 
           ...dim,
           objectFit: 'cover',
           cursor: onClick ? 'pointer' : 'default',
-          border: ring ? '2px solid #0ea5e9' : '2px solid #fff',
-          boxShadow: '0 1px 3px rgba(0,0,0,0.12)',
+          border: ring ? '2px solid var(--accent)' : '2px solid var(--bg-surface)',
+          boxShadow: '0 1px 3px rgba(0,0,0,0.25)',
           flexShrink: 0,
         }}
       />
@@ -50,8 +50,8 @@ export default function Avatar({ name, src, size = 44, onClick, ring = false }) 
         fontWeight: 700,
         fontSize: size * 0.38,
         cursor: onClick ? 'pointer' : 'default',
-        border: ring ? '2px solid #0ea5e9' : '2px solid #fff',
-        boxShadow: '0 1px 3px rgba(0,0,0,0.12)',
+        border: ring ? '2px solid var(--accent)' : '2px solid var(--bg-surface)',
+        boxShadow: '0 1px 3px rgba(0,0,0,0.25)',
         flexShrink: 0,
         userSelect: 'none',
       }}
