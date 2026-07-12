@@ -5,11 +5,12 @@ import { XIcon, PlusIcon, TrashIcon, LoaderIcon, EditIcon, CheckIcon } from '../
 import {
   preloadMember, getPendingInvites, updatePendingInvite, deletePendingInvite,
   getPendingApprovals, approveUser, rejectUser, getAllUsers,
+  adminCreateUser, adminDeleteUser, adminInviteUser,
 } from '../lib/dataService';
 
-const TABS = ['অনুমোদন অপেক্ষায়', 'Pre-load তালিকা', 'সব সদস্য'];
+const TABS = ['অনুমোদন অপেক্ষায়', 'Pre-load তালিকা', 'সব সদস্য', 'নতুন ইউজার'];
 
-export default function AdminPanel({ onClose }) {
+export default function AdminPanel({ onClose, currentUser }) {
   const [activeTab, setActiveTab] = useState(0);
   const [pending, setPending] = useState([]);
   const [invites, setInvites] = useState([]);
@@ -20,6 +21,13 @@ export default function AdminPanel({ onClose }) {
   const [editForm, setEditForm] = useState({});
   const [adding, setAdding] = useState(false);
   const [error, setError] = useState('');
+
+  const [newUserForm, setNewUserForm] = useState({ name: '', email: '', password: '', district: '', university: '', subject: '', company: '', designation: '', department: '' });
+  const [newUserMode, setNewUserMode] = useState('direct'); // 'direct' | 'invite'
+  const [creatingUser, setCreatingUser] = useState(false);
+  const [newUserError, setNewUserError] = useState('');
+  const [newUserSuccess, setNewUserSuccess] = useState('');
+  const [deletingId, setDeletingId] = useState(null);
 
   async function loadAll() {
     setLoading(true);
@@ -64,6 +72,46 @@ export default function AdminPanel({ onClose }) {
     if (!window.confirm('এই অনুরোধ প্রত্যাখ্যান করবেন?')) return;
     await rejectUser(userId);
     loadAll();
+  }
+
+  async function handleCreateUser() {
+    setNewUserError('');
+    setNewUserSuccess('');
+
+    if (!newUserForm.name.trim() || !newUserForm.email.trim()) {
+      setNewUserError('নাম ও ইমেইল আবশ্যক');
+      return;
+    }
+    if (newUserMode === 'direct' && (!newUserForm.password || newUserForm.password.length < 6)) {
+      setNewUserError('পাসওয়ার্ড কমপক্ষে ৬ অক্ষরের হতে হবে');
+      return;
+    }
+
+    setCreatingUser(true);
+    const { error } = newUserMode === 'direct'
+      ? await adminCreateUser(newUserForm)
+      : await adminInviteUser(newUserForm);
+    setCreatingUser(false);
+
+    if (error) {
+      setNewUserError(error.message);
+    } else {
+      setNewUserSuccess(newUserMode === 'direct' ? '✅ একাউন্ট তৈরি হয়েছে!' : '✅ ইনভাইট ইমেইল পাঠানো হয়েছে!');
+      setNewUserForm({ name: '', email: '', password: '', district: '', university: '', subject: '', company: '', designation: '', department: '' });
+      loadAll();
+    }
+  }
+
+  async function handleDeleteUser(user) {
+    if (!window.confirm(`${user.name}-এর একাউন্ট পুরোপুরি মুছে ফেলবেন? এটা ফিরিয়ে আনা যাবে না।`)) return;
+    setDeletingId(user.id);
+    const { error } = await adminDeleteUser(user.id);
+    setDeletingId(null);
+    if (error) {
+      window.alert('মুছতে সমস্যা হয়েছে: ' + error.message);
+    } else {
+      loadAll();
+    }
   }
 
   const fields = [
@@ -183,7 +231,7 @@ export default function AdminPanel({ onClose }) {
                 </div>
               ))}
             </>
-          ) : (
+          ) : activeTab === 2 ? (
             <>
               <p style={{ fontSize: 12.5, color: 'var(--text-secondary)', marginTop: 0 }}>{allUsers.length} জন সদস্য</p>
               {allUsers.map((u) => (
@@ -193,14 +241,85 @@ export default function AdminPanel({ onClose }) {
                     <div style={{ fontWeight: 700, fontSize: 13.5, color: 'var(--text-primary)' }}>{u.name}</div>
                     <div style={{ fontSize: 12, color: 'var(--text-secondary)' }}>{u.email}</div>
                   </div>
-                  <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', justifyContent: 'flex-end' }}>
+                  <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', justifyContent: 'flex-end', alignItems: 'center' }}>
                     {u.is_admin && <span style={{ padding: '2px 8px', borderRadius: 8, background: 'var(--admin-soft)', color: 'var(--admin-color)', fontSize: 11, fontWeight: 700 }}>Admin</span>}
                     <span style={{ padding: '2px 8px', borderRadius: 8, fontSize: 11, fontWeight: 700, background: u.approved ? 'var(--success-soft)' : 'var(--danger-soft)', color: u.approved ? 'var(--success)' : 'var(--danger)' }}>
                       {u.approved ? 'Approved' : 'Pending'}
                     </span>
+                    {currentUser && u.id !== currentUser.id && (
+                      <button
+                        onClick={() => handleDeleteUser(u)}
+                        disabled={deletingId === u.id}
+                        title="একাউন্ট মুছে ফেলুন"
+                        style={{ background: 'var(--danger-soft)', border: 'none', borderRadius: 8, padding: '5px 8px', cursor: 'pointer', color: 'var(--danger)', display: 'flex', alignItems: 'center' }}
+                      >
+                        {deletingId === u.id ? <LoaderIcon width={13} height={13} /> : <TrashIcon width={13} height={13} />}
+                      </button>
+                    )}
                   </div>
                 </div>
               ))}
+            </>
+          ) : (
+            <>
+              <div style={{ display: 'flex', gap: 8, marginBottom: 14 }}>
+                <button
+                  onClick={() => { setNewUserMode('direct'); setNewUserError(''); setNewUserSuccess(''); }}
+                  style={{
+                    flex: 1, padding: '9px', borderRadius: 10, border: 'none', cursor: 'pointer', fontSize: 12.5, fontWeight: 700,
+                    background: newUserMode === 'direct' ? 'var(--accent-gradient)' : 'var(--bg-surface-alt)',
+                    color: newUserMode === 'direct' ? '#fff' : 'var(--text-secondary)',
+                  }}
+                >
+                  সরাসরি তৈরি (পাসওয়ার্ড দিয়ে)
+                </button>
+                <button
+                  onClick={() => { setNewUserMode('invite'); setNewUserError(''); setNewUserSuccess(''); }}
+                  style={{
+                    flex: 1, padding: '9px', borderRadius: 10, border: 'none', cursor: 'pointer', fontSize: 12.5, fontWeight: 700,
+                    background: newUserMode === 'invite' ? 'var(--accent-gradient)' : 'var(--bg-surface-alt)',
+                    color: newUserMode === 'invite' ? '#fff' : 'var(--text-secondary)',
+                  }}
+                >
+                  ইনভাইট পাঠান (ইমেইল লিংক)
+                </button>
+              </div>
+
+              <p style={{ fontSize: 12.5, color: 'var(--text-secondary)', marginTop: 0 }}>
+                {newUserMode === 'direct'
+                  ? 'এখানে ইমেইল ও পাসওয়ার্ড দিয়ে সরাসরি একটা একাউন্ট বানিয়ে দেওয়া হবে — সদস্যকে আলাদা করে signup করতে হবে না, সাথে সাথে ব্যবহার করতে পারবেন।'
+                  : 'এখানে ইমেইল দিলে সেই ইমেইলে একটা লিংক যাবে, সদস্য নিজে ক্লিক করে নিজের পাসওয়ার্ড ঠিক করে নেবেন।'}
+              </p>
+
+              {newUserError && <div style={{ background: 'var(--danger-soft)', color: 'var(--danger)', padding: '8px 12px', borderRadius: 8, fontSize: 13, marginBottom: 10 }}>{newUserError}</div>}
+              {newUserSuccess && <div style={{ background: 'var(--success-soft)', color: 'var(--success)', padding: '8px 12px', borderRadius: 8, fontSize: 13, marginBottom: 10 }}>{newUserSuccess}</div>}
+
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, minmax(0, 1fr))', gap: 8, marginBottom: 10 }}>
+                {fields.map(([key, label]) => (
+                  <input key={key} placeholder={label} value={newUserForm[key]}
+                    onChange={(e) => setNewUserForm({ ...newUserForm, [key]: e.target.value })}
+                    style={{ width: '100%', minWidth: 0, boxSizing: 'border-box', padding: '9px 10px', borderRadius: 9, border: `1.5px solid var(--border)`, fontSize: 13, outline: 'none', background: 'var(--bg-surface-alt)', color: 'var(--text-primary)' }}
+                  />
+                ))}
+                {newUserMode === 'direct' && (
+                  <input
+                    type="text"
+                    placeholder="পাসওয়ার্ড * (কমপক্ষে ৬ অক্ষর)"
+                    value={newUserForm.password}
+                    onChange={(e) => setNewUserForm({ ...newUserForm, password: e.target.value })}
+                    style={{ width: '100%', minWidth: 0, boxSizing: 'border-box', padding: '9px 10px', borderRadius: 9, border: `1.5px solid var(--border)`, fontSize: 13, outline: 'none', background: 'var(--bg-surface-alt)', color: 'var(--text-primary)' }}
+                  />
+                )}
+              </div>
+
+              <button
+                onClick={handleCreateUser}
+                disabled={creatingUser}
+                style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '9px 16px', borderRadius: 10, border: 'none', background: 'var(--accent-gradient)', color: '#fff', fontWeight: 700, fontSize: 13, cursor: 'pointer' }}
+              >
+                {creatingUser ? <LoaderIcon width={14} height={14} /> : <PlusIcon width={14} height={14} />}
+                {newUserMode === 'direct' ? 'একাউন্ট তৈরি করুন' : 'ইনভাইট পাঠান'}
+              </button>
             </>
           )}
         </div>
