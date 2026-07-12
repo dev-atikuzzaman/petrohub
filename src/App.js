@@ -16,8 +16,9 @@ import ImportantUpdatesTab from './pages/ImportantUpdatesTab';
 import DocumentsTab from './pages/DocumentsTab';
 import SettingsTab from './pages/SettingsTab';
 import ThemeSwitcher from './components/ThemeSwitcher';
+import { ThemeProvider } from './lib/ThemeContext';
 import TypographyMenu from './components/TypographyMenu';
-import { useTypography } from './lib/TypographyContext';
+import { useTypography, TypographyProvider } from './lib/TypographyContext';
 import { getAllProfiles, getPostsWithDetails, subscribeToPosts, subscribeToProfiles } from './lib/dataService';
 import { HomeIcon, UsersIcon, ChartIcon, LogOutIcon, ShieldIcon, WifiOffIcon, LoaderIcon, NoteIcon, BellIcon, FolderIcon, GlobeIcon } from './components/Icons';
 
@@ -262,15 +263,19 @@ function AppShell() {
         />
       )}
 
-      {showAdminPanel && <AdminPanel onClose={() => setShowAdminPanel(false)} />}
+      {showAdminPanel && <AdminPanel onClose={() => setShowAdminPanel(false)} currentUser={profile} />}
     </div>
   );
 }
 
 export default function App() {
   return (
-    <AuthProvider>
-      <AppShell />
-    </AuthProvider>
+    <ThemeProvider>
+      <TypographyProvider>
+        <AuthProvider>
+          <AppShell />
+        </AuthProvider>
+      </TypographyProvider>
+    </ThemeProvider>
   );
 }
