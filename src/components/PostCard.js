@@ -1,9 +1,10 @@
 // src/components/PostCard.js
 import React, { useState, useEffect, useRef } from 'react';
 import Avatar from './Avatar';
-import ReactionPicker from './ReactionPicker';
-import { HeartIcon, CommentIcon, SendIcon, TrashIcon, MoreIcon, EditIcon, LockIcon, GlobeIcon, CheckIcon, LoaderIcon } from './Icons';
+import { HeartIcon, CommentIcon, SendIcon, TrashIcon, MoreIcon, EditIcon, LockIcon, GlobeIcon, CheckIcon, LoaderIcon, XIcon } from './Icons';
 import { toggleReaction, toggleCommentReaction, createComment, deletePost, deleteComment, updatePost } from '../lib/dataService';
+
+const EMOJIS = ['👍', '❤️', '😂', '😮', '😢', '🔥'];
 
 function timeAgo(dateStr) {
   const diff = (Date.now() - new Date(dateStr).getTime()) / 1000;
@@ -20,7 +21,45 @@ function groupReactions(reactions = []) {
   return counts;
 }
 
+// প্রেস করে ধরে রাখলে (long-press) reaction picker খোলে, আর সাধারণ ট্যাপে
+// দ্রুত 👍 টগল হয় (Facebook যেভাবে কাজ করে ঠিক সেভাবে)
+function useLongPress(onLongPress, onQuickTap, delay = 400) {
+  const timerRef = useRef(null);
+  const triggeredRef = useRef(false);
+
+  function start() {
+    triggeredRef.current = false;
+    timerRef.current = setTimeout(() => {
+      triggeredRef.current = true;
+      onLongPress();
+    }, delay);
+  }
+
+  function clear() {
+    clearTimeout(timerRef.current);
+  }
+
+  function handleClick(e) {
+    if (triggeredRef.current) {
+      triggeredRef.current = false;
+      return; // long-press ইতিমধ্যে হ্যান্ডল হয়ে গেছে, তাই ক্লিক আলাদা করে ট্রিগার হবে না
+    }
+    onQuickTap(e);
+  }
+
+  return {
+    onMouseDown: start,
+    onMouseUp: clear,
+    onMouseLeave: clear,
+    onTouchStart: start,
+    onTouchEnd: clear,
+    onClick: handleClick,
+    onContextMenu: (e) => e.preventDefault(),
+  };
+}
+
 export default function PostCard({ post, currentUser, onUpdate, onOpenProfile }) {
+  const [showEmojiPicker, setShowEmojiPicker] = useState(false);
   const [showComments, setShowComments] = useState(false);
   const [commentText, setCommentText] = useState('');
   const [replyTo, setReplyTo] = useState(null);
@@ -31,15 +70,21 @@ export default function PostCard({ post, currentUser, onUpdate, onOpenProfile })
   const [savingEdit, setSavingEdit] = useState(false);
   const [showPrivacyMenu, setShowPrivacyMenu] = useState(false);
   const [updatingPrivacy, setUpdatingPrivacy] = useState(false);
+  const [showReactors, setShowReactors] = useState(false);
+  const [reactorsFilter, setReactorsFilter] = useState('all');
 
   const menuRef = useRef(null);
+  const emojiRef = useRef(null);
 
-  // মেনুর বাইরে ক্লিক করলে সেটা বন্ধ হয়ে যাবে
+  // মেনু বা ইমোজি পিকারের বাইরে ক্লিক করলে সেটা বন্ধ হয়ে যাবে
   useEffect(() => {
     function handleClickOutside(e) {
       if (menuRef.current && !menuRef.current.contains(e.target)) {
         setShowMenu(false);
         setShowPrivacyMenu(false);
+      }
+      if (emojiRef.current && !emojiRef.current.contains(e.target)) {
+        setShowEmojiPicker(false);
       }
     }
     document.addEventListener('mousedown', handleClickOutside);
@@ -62,14 +107,17 @@ export default function PostCard({ post, currentUser, onUpdate, onOpenProfile })
   }
 
   async function handleReact(emoji) {
+    setShowEmojiPicker(false);
     await toggleReaction(post.id, currentUser.id, emoji);
     onUpdate && onUpdate();
   }
 
-  async function handleReactComment(commentId, emoji) {
-    await toggleCommentReaction(commentId, currentUser.id, emoji);
-    onUpdate && onUpdate();
+  // সাধারণ ট্যাপ: রিয়্যাক্ট না করা থাকলে 👍 বসে, আগে থেকে কিছু দেওয়া থাকলে উঠে যায়
+  function quickTapReact() {
+    handleReact(myReaction ? myReaction.emoji : '👍');
   }
+
+  const longPress = useLongPress(() => setShowEmojiPicker(true), quickTapReact);
 
   async function handleSubmitComment() {
     if (!commentText.trim()) return;
@@ -272,20 +320,30 @@ export default function PostCard({ post, currentUser, onUpdate, onOpenProfile })
       )}
 
       {totalReactions > 0 && (
-        <div style={{ display: 'flex', gap: 4, marginTop: 12, fontSize: 13, color: 'var(--text-secondary)' }}>
+        <div
+          onClick={() => { setReactorsFilter('all'); setShowReactors(true); }}
+          style={{ display: 'flex', gap: 4, marginTop: 12, fontSize: 13, color: 'var(--text-secondary)', cursor: 'pointer', width: 'fit-content' }}
+        >
           {Object.entries(reactionCounts).map(([emoji, count]) => (
             <span key={emoji}>{emoji} {count}</span>
           ))}
         </div>
       )}
 
-      <div style={{ display: 'flex', gap: 8, marginTop: 12, paddingTop: 12, borderTop: `1px solid var(--border-soft)` }}>
-        <ReactionPicker
-          myReaction={myReaction?.emoji}
-          onReact={handleReact}
-          label="রিয়্যাক্ট"
-          defaultIcon={<HeartIcon width={16} height={16} />}
-        />
+      <div ref={emojiRef} style={{ display: 'flex', gap: 8, marginTop: 12, paddingTop: 12, borderTop: `1px solid var(--border-soft)`, position: 'relative' }}>
+        <button
+          {...longPress}
+          style={{
+            flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6,
+            padding: '8px', borderRadius: 10, border: 'none',
+            background: myReaction ? 'var(--danger-soft)' : 'var(--bg-surface-alt)',
+            color: myReaction ? 'var(--danger)' : 'var(--text-secondary)', fontSize: 13, fontWeight: 600, cursor: 'pointer',
+            userSelect: 'none', WebkitUserSelect: 'none', WebkitTouchCallout: 'none',
+          }}
+        >
+          {myReaction ? <span>{myReaction.emoji}</span> : <HeartIcon width={16} height={16} />}
+          রিয়্যাক্ট
+        </button>
         <button
           onClick={() => setShowComments(!showComments)}
           style={{
@@ -296,6 +354,25 @@ export default function PostCard({ post, currentUser, onUpdate, onOpenProfile })
         >
           <CommentIcon width={16} height={16} /> মন্তব্য {post.comments?.length > 0 && `(${post.comments.length})`}
         </button>
+
+        {showEmojiPicker && (
+          <div style={{
+            position: 'absolute', bottom: 44, left: 0, background: 'var(--bg-surface)', borderRadius: 16,
+            padding: '8px 10px', boxShadow: '0 8px 24px rgba(0,0,0,0.18)', display: 'flex', gap: 6, zIndex: 10,
+          }}>
+            {EMOJIS.map((e) => (
+              <button
+                key={e}
+                onClick={() => handleReact(e)}
+                style={{ background: 'none', border: 'none', fontSize: 22, cursor: 'pointer', transition: 'transform 0.15s' }}
+                onMouseEnter={(ev) => (ev.target.style.transform = 'scale(1.3)')}
+                onMouseLeave={(ev) => (ev.target.style.transform = 'scale(1)')}
+              >
+                {e}
+              </button>
+            ))}
+          </div>
+        )}
       </div>
 
       {showComments && (
@@ -308,7 +385,7 @@ export default function PostCard({ post, currentUser, onUpdate, onOpenProfile })
                 onReply={() => setReplyTo(c.id)}
                 onDelete={() => handleDeleteComment(c.id)}
                 onOpenProfile={onOpenProfile}
-                onReact={(emoji) => handleReactComment(c.id, emoji)}
+                onUpdate={onUpdate}
               />
               {repliesFor(c.id).map((r) => (
                 <div key={r.id} style={{ marginLeft: 36, marginTop: 8 }}>
@@ -317,7 +394,7 @@ export default function PostCard({ post, currentUser, onUpdate, onOpenProfile })
                     currentUser={currentUser}
                     onDelete={() => handleDeleteComment(r.id)}
                     onOpenProfile={onOpenProfile}
-                    onReact={(emoji) => handleReactComment(r.id, emoji)}
+                    onUpdate={onUpdate}
                   />
                 </div>
               ))}
@@ -358,15 +435,99 @@ export default function PostCard({ post, currentUser, onUpdate, onOpenProfile })
           </div>
         </div>
       )}
+
+      {showReactors && (
+        <div
+          onClick={() => setShowReactors(false)}
+          style={{ position: 'fixed', inset: 0, background: 'rgba(15,23,42,0.6)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000, padding: 16, backdropFilter: 'blur(4px)' }}
+        >
+          <div
+            onClick={(e) => e.stopPropagation()}
+            style={{ background: 'var(--bg-surface)', borderRadius: 20, width: '100%', maxWidth: 400, maxHeight: '70vh', display: 'flex', flexDirection: 'column', boxShadow: 'var(--shadow-lg)', animation: 'slideUp 0.3s ease' }}
+          >
+            <div style={{ display: 'flex', alignItems: 'center', gap: 4, padding: '14px 16px 10px', borderBottom: `1px solid var(--border-soft)` }}>
+              <button
+                onClick={() => setReactorsFilter('all')}
+                style={{
+                  padding: '6px 12px', borderRadius: 20, border: 'none', cursor: 'pointer', fontSize: 13, fontWeight: 700,
+                  background: reactorsFilter === 'all' ? 'var(--bg-surface-alt)' : 'none',
+                  color: reactorsFilter === 'all' ? 'var(--text-primary)' : 'var(--text-secondary)',
+                }}
+              >
+                সব {totalReactions}
+              </button>
+              {Object.entries(reactionCounts).map(([emoji, count]) => (
+                <button
+                  key={emoji}
+                  onClick={() => setReactorsFilter(emoji)}
+                  style={{
+                    padding: '6px 10px', borderRadius: 20, border: 'none', cursor: 'pointer', fontSize: 13, fontWeight: 700,
+                    display: 'flex', alignItems: 'center', gap: 4,
+                    background: reactorsFilter === emoji ? 'var(--bg-surface-alt)' : 'none',
+                    color: reactorsFilter === emoji ? 'var(--text-primary)' : 'var(--text-secondary)',
+                  }}
+                >
+                  <span>{emoji}</span> {count}
+                </button>
+              ))}
+              <button onClick={() => setShowReactors(false)} style={{ marginLeft: 'auto', background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-muted)', padding: 4, display: 'flex' }}>
+                <XIcon width={18} height={18} />
+              </button>
+            </div>
+
+            <div style={{ overflowY: 'auto', padding: '6px 8px' }}>
+              {(post.reactions || [])
+                .filter((r) => reactorsFilter === 'all' || r.emoji === reactorsFilter)
+                .map((r) => (
+                  <div
+                    key={r.id}
+                    onClick={() => { onOpenProfile && onOpenProfile(r.user); setShowReactors(false); }}
+                    style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '8px 10px', borderRadius: 12, cursor: 'pointer' }}
+                    onMouseEnter={(e) => (e.currentTarget.style.background = 'var(--bg-surface-alt)')}
+                    onMouseLeave={(e) => (e.currentTarget.style.background = 'none')}
+                  >
+                    <Avatar name={r.user?.name} src={r.user?.avatar_url} size={38} />
+                    <div style={{ flex: 1, fontSize: 14, fontWeight: 600, color: 'var(--text-primary)' }}>{r.user?.name || 'অজানা'}</div>
+                    <span style={{ fontSize: 18 }}>{r.emoji}</span>
+                  </div>
+                ))}
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
 
-function CommentRow({ comment, currentUser, onReply, onDelete, onOpenProfile, onReact }) {
+function CommentRow({ comment, currentUser, onReply, onDelete, onOpenProfile, onUpdate }) {
   const isOwn = comment.user_id === currentUser.id;
+  const [showEmojiPicker, setShowEmojiPicker] = useState(false);
+  const [showReactors, setShowReactors] = useState(false);
+  const emojiRef = useRef(null);
+
+  useEffect(() => {
+    function handleClickOutside(e) {
+      if (emojiRef.current && !emojiRef.current.contains(e.target)) setShowEmojiPicker(false);
+    }
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
+
   const myReaction = comment.comment_reactions?.find((r) => r.user_id === currentUser.id);
   const reactionCounts = groupReactions(comment.comment_reactions);
   const totalReactions = comment.comment_reactions?.length || 0;
+
+  async function handleReact(emoji) {
+    setShowEmojiPicker(false);
+    await toggleCommentReaction(comment.id, currentUser.id, emoji);
+    onUpdate && onUpdate();
+  }
+
+  function quickTapReact() {
+    handleReact(myReaction ? myReaction.emoji : '👍');
+  }
+
+  const longPress = useLongPress(() => setShowEmojiPicker(true), quickTapReact);
 
   return (
     <div style={{ display: 'flex', gap: 8 }}>
@@ -383,23 +544,27 @@ function CommentRow({ comment, currentUser, onReply, onDelete, onOpenProfile, on
         </div>
 
         {totalReactions > 0 && (
-          <div style={{ display: 'flex', gap: 4, marginTop: 2, paddingLeft: 4, fontSize: 11, color: 'var(--text-secondary)' }}>
+          <div
+            onClick={() => setShowReactors(true)}
+            style={{ display: 'flex', gap: 3, marginTop: 3, marginLeft: 4, fontSize: 11.5, color: 'var(--text-secondary)', cursor: 'pointer', width: 'fit-content' }}
+          >
             {Object.entries(reactionCounts).map(([emoji, count]) => (
               <span key={emoji}>{emoji} {count}</span>
             ))}
           </div>
         )}
 
-        <div style={{ display: 'flex', gap: 12, alignItems: 'center', marginTop: 4, paddingLeft: 4 }}>
+        <div ref={emojiRef} style={{ display: 'flex', gap: 12, marginTop: 4, paddingLeft: 4, position: 'relative', alignItems: 'center' }}>
           <span style={{ fontSize: 11, color: 'var(--text-muted)' }}>{timeAgo(comment.created_at)}</span>
-          {onReact && (
-            <ReactionPicker
-              size="small"
-              myReaction={myReaction?.emoji}
-              onReact={onReact}
-              label="রিয়্যাক্ট"
-            />
-          )}
+          <span
+            {...longPress}
+            style={{
+              fontSize: 11, fontWeight: 700, cursor: 'pointer', userSelect: 'none', WebkitUserSelect: 'none', WebkitTouchCallout: 'none',
+              color: myReaction ? 'var(--danger)' : 'var(--accent)',
+            }}
+          >
+            {myReaction ? `${myReaction.emoji} রিয়্যাক্ট করেছেন` : 'রিয়্যাক্ট'}
+          </span>
           {onReply && (
             <span onClick={onReply} style={{ fontSize: 11, color: 'var(--accent)', fontWeight: 600, cursor: 'pointer' }}>
               রিপ্লাই
@@ -410,8 +575,61 @@ function CommentRow({ comment, currentUser, onReply, onDelete, onOpenProfile, on
               মুছুন
             </span>
           )}
+
+          {showEmojiPicker && (
+            <div style={{
+              position: 'absolute', bottom: 24, left: 0, background: 'var(--bg-surface)', borderRadius: 16,
+              padding: '7px 9px', boxShadow: '0 8px 24px rgba(0,0,0,0.18)', display: 'flex', gap: 5, zIndex: 10,
+            }}>
+              {EMOJIS.map((e) => (
+                <button
+                  key={e}
+                  onClick={() => handleReact(e)}
+                  style={{ background: 'none', border: 'none', fontSize: 19, cursor: 'pointer', transition: 'transform 0.15s' }}
+                  onMouseEnter={(ev) => (ev.target.style.transform = 'scale(1.3)')}
+                  onMouseLeave={(ev) => (ev.target.style.transform = 'scale(1)')}
+                >
+                  {e}
+                </button>
+              ))}
+            </div>
+          )}
         </div>
       </div>
+
+      {showReactors && (
+        <div
+          onClick={() => setShowReactors(false)}
+          style={{ position: 'fixed', inset: 0, background: 'rgba(15,23,42,0.6)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000, padding: 16, backdropFilter: 'blur(4px)' }}
+        >
+          <div
+            onClick={(e) => e.stopPropagation()}
+            style={{ background: 'var(--bg-surface)', borderRadius: 20, width: '100%', maxWidth: 360, maxHeight: '60vh', display: 'flex', flexDirection: 'column', boxShadow: 'var(--shadow-lg)', animation: 'slideUp 0.3s ease' }}
+          >
+            <div style={{ display: 'flex', alignItems: 'center', padding: '12px 14px', borderBottom: `1px solid var(--border-soft)` }}>
+              <div style={{ flex: 1, fontSize: 13, fontWeight: 800, color: 'var(--text-primary)' }}>কে রিয়্যাক্ট করেছেন ({totalReactions})</div>
+              <button onClick={() => setShowReactors(false)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-muted)', padding: 4, display: 'flex' }}>
+                <XIcon width={17} height={17} />
+              </button>
+            </div>
+            <div style={{ overflowY: 'auto', padding: '6px 8px' }}>
+              {(comment.comment_reactions || []).map((r) => (
+                <div
+                  key={r.id}
+                  onClick={() => { onOpenProfile && onOpenProfile(r.user); setShowReactors(false); }}
+                  style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '7px 8px', borderRadius: 10, cursor: 'pointer' }}
+                  onMouseEnter={(e) => (e.currentTarget.style.background = 'var(--bg-surface-alt)')}
+                  onMouseLeave={(e) => (e.currentTarget.style.background = 'none')}
+                >
+                  <Avatar name={r.user?.name} src={r.user?.avatar_url} size={32} />
+                  <div style={{ flex: 1, fontSize: 13, fontWeight: 600, color: 'var(--text-primary)' }}>{r.user?.name || 'অজানা'}</div>
+                  <span style={{ fontSize: 16 }}>{r.emoji}</span>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
