@@ -1,9 +1,30 @@
 // src/lib/TypographyContext.js
 import React, { createContext, useContext, useEffect, useState, useMemo } from 'react';
-import { FONT_OPTIONS, SIZE_OPTIONS, WEIGHT_OPTIONS, TEXT_COLOR_OPTIONS, DEFAULT_TYPOGRAPHY, supportsZoom } from './typography';
+import { FONT_OPTIONS, FONT_ORDER, SIZE_OPTIONS, WEIGHT_OPTIONS, TEXT_COLOR_OPTIONS, DEFAULT_TYPOGRAPHY, supportsZoom, buildCustomFontEntry, googleFontsUrl } from './typography';
 
 const TypographyContext = createContext(null);
 const STORAGE_KEY = 'petro-hub-typography-v1';
+const CUSTOM_FONTS_KEY = 'petro-hub-custom-fonts-v1';
+
+function loadCustomFonts() {
+  try {
+    const raw = localStorage.getItem(CUSTOM_FONTS_KEY);
+    const list = raw ? JSON.parse(raw) : [];
+    return Array.isArray(list) ? list : [];
+  } catch {
+    return [];
+  }
+}
+
+function injectGoogleFontLink(name) {
+  const id = `custom-font-${name.trim().toLowerCase().replace(/\s+/g, '-')}`;
+  if (document.getElementById(id)) return; // আগেই লোড করা থাকলে আবার যোগ করার দরকার নেই
+  const link = document.createElement('link');
+  link.id = id;
+  link.rel = 'stylesheet';
+  link.href = googleFontsUrl(name);
+  document.head.appendChild(link);
+}
 
 function loadStored() {
   try {
@@ -21,11 +42,33 @@ function loadStored() {
 
 export function TypographyProvider({ children }) {
   const [state, setState] = useState(loadStored);
+  const [customFonts, setCustomFonts] = useState(loadCustomFonts);
   const zoomOk = useMemo(() => supportsZoom(), []);
+
+  // মিশ্রিত ফন্ট তালিকা — বিল্ট-ইন ৭টা + ব্যবহারকারীর যোগ করা কাস্টম ফন্ট
+  const mergedFontOptions = useMemo(() => {
+    const merged = { ...FONT_OPTIONS };
+    customFonts.forEach((name) => {
+      merged[`custom:${name}`] = buildCustomFontEntry(name);
+    });
+    return merged;
+  }, [customFonts]);
+
+  const mergedFontOrder = useMemo(
+    () => [...FONT_ORDER, ...customFonts.map((name) => `custom:${name}`)],
+    [customFonts]
+  );
+
+  // অ্যাপ চালু হওয়ার সময় আগে যোগ করা কাস্টম ফন্টগুলো Google Fonts থেকে
+  // (আবার) লোড করে নেওয়া — লোকালস্টোরেজে নাম সংরক্ষিত থাকে, কিন্তু
+  // stylesheet <link> ট্যাগ পেজ রিফ্রেশ হলে হারিয়ে যায়
+  useEffect(() => {
+    customFonts.forEach((name) => injectGoogleFontLink(name));
+  }, [customFonts]);
 
   useEffect(() => {
     // গ্লোবাল ফন্ট body তে বসানো হয় — বাকি সব কম্পোনেন্ট এটাই inherit করবে
-    const font = FONT_OPTIONS[state.global.font] || FONT_OPTIONS.system;
+    const font = mergedFontOptions[state.global.font] || FONT_OPTIONS.system;
     document.body.style.fontFamily = font.stack;
 
     try {
@@ -33,7 +76,35 @@ export function TypographyProvider({ children }) {
     } catch {
       // localStorage ব্লক থাকলেও অ্যাপ যেন না ভাঙে
     }
-  }, [state]);
+  }, [state, mergedFontOptions]);
+
+  function addCustomFont(name) {
+    const clean = (name || '').trim();
+    if (!clean) return { error: 'ফন্টের নাম লিখুন' };
+
+    const alreadyExists = customFonts.some((f) => f.toLowerCase() === clean.toLowerCase());
+    if (alreadyExists) return { error: 'এই ফন্ট আগেই যোগ করা আছে' };
+
+    injectGoogleFontLink(clean);
+    const next = [...customFonts, clean];
+    setCustomFonts(next);
+    try {
+      localStorage.setItem(CUSTOM_FONTS_KEY, JSON.stringify(next));
+    } catch {
+      // ignore
+    }
+    return { error: null, key: `custom:${clean}` };
+  }
+
+  function removeCustomFont(name) {
+    const next = customFonts.filter((f) => f !== name);
+    setCustomFonts(next);
+    try {
+      localStorage.setItem(CUSTOM_FONTS_KEY, JSON.stringify(next));
+    } catch {
+      // ignore
+    }
+  }
 
   function setGlobal(partial) {
     setState((prev) => ({ ...prev, global: { ...prev.global, ...partial } }));
@@ -63,7 +134,7 @@ export function TypographyProvider({ children }) {
   // একটা page wrapper <div> এ বসানোর জন্য style object — font-family, boldness ও size scale
   function getPageStyle(pageKey) {
     const eff = getEffective(pageKey);
-    const font = FONT_OPTIONS[eff.font] || FONT_OPTIONS.system;
+    const font = mergedFontOptions[eff.font] || FONT_OPTIONS.system;
     const weight = WEIGHT_OPTIONS[eff.weight] || WEIGHT_OPTIONS.normal;
     const size = SIZE_OPTIONS[eff.size] || SIZE_OPTIONS.normal;
 
@@ -98,7 +169,11 @@ export function TypographyProvider({ children }) {
     clearPageOverride,
     getEffective,
     getPageStyle,
-    fontOptions: FONT_OPTIONS,
+    fontOptions: mergedFontOptions,
+    fontOrder: mergedFontOrder,
+    customFonts,
+    addCustomFont,
+    removeCustomFont,
     sizeOptions: SIZE_OPTIONS,
     weightOptions: WEIGHT_OPTIONS,
   };

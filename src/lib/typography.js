@@ -85,6 +85,32 @@ export const TEXT_COLOR_ORDER = ['default', 'mint', 'gold', 'sky', 'warm', 'slat
 
 export const DEFAULT_TYPOGRAPHY = { font: 'system', size: 'normal', weight: 'normal', color: 'default' };
 
+// ============================================================
+// কাস্টম ফন্ট — ব্যবহারকারী নিজে ফন্টের নাম লিখে যোগ করতে পারেন
+// ============================================================
+// এখানে থাকা ৭টা ফন্ট (SolaimanLipi, Nikosh ইত্যাদি) সাধারণত মানুষের
+// ডিভাইসে ইনস্টল করা থাকে না, তাই বেছে নিলেও দৃশ্যত কোনো পরিবর্তন
+// দেখা যায় না। এর সমাধান হিসেবে ব্যবহারকারী Google Fonts-এ থাকা
+// যেকোনো ফন্টের নাম লিখে দিলে সেটা সরাসরি Google Fonts থেকে লোড করে
+// নেওয়া হয় (ইনস্টলের দরকার নেই, ইন্টারনেট lagbe)।
+
+// একটা কাস্টম ফন্টের নাম থেকে dropdown-এর জন্য entry বানানো
+export function buildCustomFontEntry(name) {
+  const clean = name.trim();
+  return {
+    label: `${clean} (কাস্টম)`,
+    stack: `'${clean}', 'Hind Siliguri', sans-serif`,
+    isCustom: true,
+    googleFontName: clean,
+  };
+}
+
+// Google Fonts CSS2 API থেকে ফন্টটা লোড করার জন্য stylesheet URL
+export function googleFontsUrl(name) {
+  const family = name.trim().replace(/\s+/g, '+');
+  return `https://fonts.googleapis.com/css2?family=${encodeURIComponent(family).replace(/%2B/g, '+')}:wght@400;500;600;700;800&display=swap`;
+}
+
 // zoom সাপোর্ট করে না এমন ব্রাউজারের (মূলত Firefox) জন্য transform-scale ফলব্যাক দরকার কিনা যাচাই
 export function supportsZoom() {
   try {

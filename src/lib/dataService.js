@@ -54,8 +54,8 @@ export async function getPostsWithDetails() {
     .select(`
       *,
       author:profiles!posts_user_id_fkey ( id, name, avatar_url, designation, company, current_company ),
-      comments ( id, text, created_at, parent_id, user_id, author:profiles!comments_user_id_fkey ( id, name, avatar_url ), comment_reactions ( id, emoji, user_id ) ),
-      reactions ( id, emoji, user_id )
+      comments ( id, text, created_at, parent_id, user_id, author:profiles!comments_user_id_fkey ( id, name, avatar_url ), comment_reactions ( id, emoji, user_id, user:profiles!comment_reactions_user_id_fkey ( id, name, avatar_url ) ) ),
+      reactions ( id, emoji, user_id, user:profiles!reactions_user_id_fkey ( id, name, avatar_url ) )
     `)
     .order('created_at', { ascending: false });
 
@@ -172,9 +172,6 @@ export async function toggleReaction(postId, userId, emoji) {
   }
 }
 
-// ============================================================
-// COMMENT REACTIONS (মন্তব্যে ইমোজি রিয়্যাকশন)
-// ============================================================
 export async function toggleCommentReaction(commentId, userId, emoji) {
   const { data: existing } = await supabase
     .from('comment_reactions')
@@ -436,10 +433,45 @@ export async function getAllUsers() {
   return data;
 }
 
-// Admin কর্তৃক নতুন user তৈরি (Supabase Admin API — শুধু service_role key দিয়ে কাজ করে,
-// তাই এটা browser থেকে সরাসরি করা সম্ভব নয়। এর পরিবর্তে admin Supabase Dashboard →
-// Authentication → Users → "Invite user" বা "Add user" ব্যবহার করবেন।
-// নিচের ফাংশনটা pending_invites এ pre-load করার জন্য)
+// ------------------------------------------------------------
+// Admin কর্তৃক সরাসরি একাউন্ট তৈরি/মুছে ফেলা/ইনভাইট — এইগুলো
+// service_role key লাগে বলে সরাসরি ব্রাউজার থেকে করা যায় না, তাই
+// api/admin-*.js সার্ভারলেস ফাংশনের মাধ্যমে করা হয় (সেখানে যাচাই
+// করা হয় রিকোয়েস্ট পাঠানো ব্যক্তি সত্যিই admin কিনা)।
+// ------------------------------------------------------------
+async function callAdminApi(path, body) {
+  const { data: sessionData } = await supabase.auth.getSession();
+  const token = sessionData?.session?.access_token;
+  if (!token) return { error: { message: 'সেশন পাওয়া যায়নি, আবার লগইন করুন' } };
+
+  try {
+    const res = await fetch(path, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+      body: JSON.stringify(body),
+    });
+    const json = await res.json().catch(() => ({}));
+    if (!res.ok) return { error: { message: json.error || `সমস্যা হয়েছে (${res.status})` } };
+    return { data: json, error: null };
+  } catch (err) {
+    return { error: { message: err.message } };
+  }
+}
+
+// সরাসরি ইমেইল+পাসওয়ার্ড দিয়ে একাউন্ট তৈরি — সদস্যকে signup করতে হয় না
+export async function adminCreateUser(fields) {
+  return callAdminApi('/api/admin-create-user', fields);
+}
+
+// একাউন্ট পুরোপুরি মুছে ফেলা
+export async function adminDeleteUser(userId) {
+  return callAdminApi('/api/admin-delete-user', { userId });
+}
+
+// ইমেইলে ইনভাইট পাঠানো — সদস্য নিজেই লিংকে ক্লিক করে পাসওয়ার্ড সেট করবেন
+export async function adminInviteUser(fields) {
+  return callAdminApi('/api/admin-invite-user', { ...fields, redirectTo: window.location.origin });
+}
 export async function preloadMember(memberData) {
   const { data, error } = await supabase
     .from('pending_invites')
