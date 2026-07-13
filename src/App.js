@@ -17,8 +17,6 @@ import DocumentsTab from './pages/DocumentsTab';
 import SettingsTab from './pages/SettingsTab';
 import ThemeSwitcher from './components/ThemeSwitcher';
 import { ThemeProvider } from './lib/ThemeContext';
-import TypographyMenu from './components/TypographyMenu';
-import { useTypography, TypographyProvider } from './lib/TypographyContext';
 import { getAllProfiles, getPostsWithDetails, subscribeToPosts, subscribeToProfiles } from './lib/dataService';
 import { HomeIcon, UsersIcon, ChartIcon, LogOutIcon, ShieldIcon, WifiOffIcon, LoaderIcon, NoteIcon, BellIcon, FolderIcon, GlobeIcon } from './components/Icons';
 
@@ -27,7 +25,6 @@ const SettingsIcon = (p) => <svg width="20" height="20" viewBox="0 0 24 24" fill
 
 function AppShell() {
   const { profile, user, signOut, isAdmin, isApproved, loading: authLoading, passwordRecovery } = useAuth();
-  const { getPageStyle } = useTypography();
   const [tab, setTab] = useState('feed');
   const [members, setMembers] = useState([]);
   const [posts, setPosts] = useState([]);
@@ -178,7 +175,6 @@ function AppShell() {
         </div>
 
         <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-          <TypographyMenu currentPageKey={tab} currentPageLabel={tabs.find((t) => t.key === tab)?.label} />
           <ThemeSwitcher />
           {isAdmin && (
             <button
@@ -202,7 +198,7 @@ function AppShell() {
 
       <Marquee />
 
-      <main style={getPageStyle(tab)}>
+      <main>
         {dataLoading ? (
           <div style={{ textAlign: 'center', padding: 60 }}>
             <LoaderIcon width={28} height={28} color="var(--accent)" />
@@ -271,11 +267,9 @@ function AppShell() {
 export default function App() {
   return (
     <ThemeProvider>
-      <TypographyProvider>
-        <AuthProvider>
-          <AppShell />
-        </AuthProvider>
-      </TypographyProvider>
+      <AuthProvider>
+        <AppShell />
+      </AuthProvider>
     </ThemeProvider>
   );
 }
