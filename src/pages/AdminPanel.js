@@ -246,7 +246,7 @@ export default function AdminPanel({ onClose, currentUser }) {
                     <span style={{ padding: '2px 8px', borderRadius: 8, fontSize: 11, fontWeight: 700, background: u.approved ? 'var(--success-soft)' : 'var(--danger-soft)', color: u.approved ? 'var(--success)' : 'var(--danger)' }}>
                       {u.approved ? 'Approved' : 'Pending'}
                     </span>
-                    {currentUser && u.id !== currentUser.id && (
+                    {currentUser && u.id !== currentUser.id && !u.approved && (
                       <button
                         onClick={() => handleDeleteUser(u)}
                         disabled={deletingId === u.id}
