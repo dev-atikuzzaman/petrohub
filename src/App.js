@@ -219,7 +219,7 @@ function AppShell() {
         ) : tab === 'documents' ? (
           <DocumentsTab currentUser={profile} />
         ) : tab === 'meeting' ? (
-          <MeetingTab currentUser={profile} />
+          <MeetingTab currentUser={profile} members={members} />
         ) : tab === 'settings' ? (
           <SettingsTab currentUser={profile} onEditProfile={() => { setProfileEditIntent(true); setViewingProfile(profile); }} />
         ) : (
