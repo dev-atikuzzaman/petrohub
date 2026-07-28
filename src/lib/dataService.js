@@ -222,6 +222,7 @@ export function subscribeToAppChanges(onChange) {
     .on('postgres_changes', { event: '*', schema: 'public', table: 'comments' }, wrappedOnChange)
     .on('postgres_changes', { event: '*', schema: 'public', table: 'reactions' }, wrappedOnChange)
     .on('postgres_changes', { event: '*', schema: 'public', table: 'comment_reactions' }, wrappedOnChange)
+    .on('postgres_changes', { event: '*', schema: 'public', table: 'meeting_rooms' }, wrappedOnChange)
     .on('postgres_changes', { event: '*', schema: 'public', table: 'profiles' }, wrappedOnChange)
     .subscribe((status) => {
       if (status === 'SUBSCRIBED') {
@@ -505,5 +506,36 @@ export async function updatePendingInvite(id, updates) {
 export async function deletePendingInvite(id) {
   const { error } = await supabase.from('pending_invites').delete().eq('id', id);
   if (error) console.error('❌ deletePendingInvite:', error.message);
+  return { error };
+}
+
+// ------------------------------------------------------------
+// টপিক-ভিত্তিক প্রাইভেট মিটিং রুম — নির্দিষ্ট কয়েকজন সদস্যকে নিয়ে
+// ------------------------------------------------------------
+export async function getMyMeetingRooms() {
+  // RLS নিজে থেকেই শুধু created_by নিজে হলে বা invited_user_ids এ থাকলে row ফেরত দেবে
+  const { data, error } = await supabase
+    .from('meeting_rooms')
+    .select('*')
+    .order('created_at', { ascending: false });
+  if (error) { console.error('❌ getMyMeetingRooms:', error.message); return []; }
+  return data;
+}
+
+export async function createMeetingRoom(createdBy, topic, invitedUserIds) {
+  const slug = topic.trim().toLowerCase().replace(/[^a-z0-9\u0980-\u09FF]+/g, '-').replace(/^-+|-+$/g, '').slice(0, 40) || 'topic';
+  const roomName = `petro-hub-topic-${slug}-${Date.now().toString(36)}`;
+  const { data, error } = await supabase
+    .from('meeting_rooms')
+    .insert({ topic: topic.trim(), room_name: roomName, created_by: createdBy, invited_user_ids: invitedUserIds })
+    .select()
+    .single();
+  if (error) console.error('❌ createMeetingRoom:', error.message);
+  return { data, error };
+}
+
+export async function deleteMeetingRoom(id) {
+  const { error } = await supabase.from('meeting_rooms').delete().eq('id', id);
+  if (error) console.error('❌ deleteMeetingRoom:', error.message);
   return { error };
 }
