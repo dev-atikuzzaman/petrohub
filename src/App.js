@@ -6,6 +6,7 @@ import ResetPasswordScreen from './components/ResetPasswordScreen';
 import Avatar from './components/Avatar';
 import ProfileModal from './components/ProfileModal';
 import Marquee from './components/Marquee';
+import DateTimeBar from './components/DateTimeBar';
 import FeedTab from './pages/FeedTab';
 import MembersTab from './pages/MembersTab';
 import StatsTab from './pages/StatsTab';
@@ -198,6 +199,7 @@ function AppShell() {
         </div>
       </header>
 
+      <DateTimeBar />
       <Marquee />
 
       <main>
