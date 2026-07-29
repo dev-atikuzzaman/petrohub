@@ -22,34 +22,31 @@ export default function DateTimeBar() {
   return (
     <div
       style={{
-        margin: '10px 14px 0', padding: '12px 16px', borderRadius: 16,
-        background: 'var(--accent-gradient)', boxShadow: 'var(--shadow)',
+        // Marquee-ও accent-gradient ব্যবহার করে বলে DateTimeBar-এ সেটা এড়িয়ে
+        // নিউট্রাল surface কার্ড রাখা হয়েছে — যাতে থিম যেটাই হোক (এমনকি
+        // উজ্জ্বল গ্র্যাডিয়েন্ট থিমেও) দুটো আলাদা এলিমেন্ট হিসেবে স্পষ্ট
+        // বোঝা যায়, একে অপরের সাথে মিশে না যায়
+        margin: '10px 14px 12px', padding: '12px 16px', borderRadius: 16,
+        background: 'var(--bg-surface)', border: '1px solid var(--border-soft)', boxShadow: 'var(--shadow)',
         display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 10,
-        position: 'relative', overflow: 'hidden',
       }}
     >
-      {/* সূক্ষ্ম প্রিমিয়াম টেক্সচার — একটা হালকা আলোর বৃত্ত */}
-      <div style={{
-        position: 'absolute', top: -30, right: -30, width: 110, height: 110, borderRadius: '50%',
-        background: 'rgba(255,255,255,0.10)', pointerEvents: 'none',
-      }} />
-
-      <div style={{ display: 'flex', alignItems: 'center', gap: 8, position: 'relative', minWidth: 0 }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 10, minWidth: 0 }}>
         <div style={{
-          width: 34, height: 34, borderRadius: 10, background: 'rgba(255,255,255,0.18)',
+          width: 34, height: 34, borderRadius: 10, background: 'var(--accent-soft)',
           display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0,
         }}>
-          <CalendarIcon width={16} height={16} color="#fff" />
+          <CalendarIcon width={16} height={16} color="var(--accent)" />
         </div>
         <div style={{ minWidth: 0 }}>
-          <div style={{ fontSize: 13.5, fontWeight: 800, color: '#fff', letterSpacing: 0.2 }}>{day}</div>
-          <div style={{ fontSize: 11, color: 'rgba(255,255,255,0.85)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{date}</div>
+          <div style={{ fontSize: 13.5, fontWeight: 800, color: 'var(--text-primary)', letterSpacing: 0.2 }}>{day}</div>
+          <div style={{ fontSize: 11, color: 'var(--text-muted)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{date}</div>
         </div>
       </div>
 
-      <div style={{ display: 'flex', alignItems: 'center', gap: 6, position: 'relative', flexShrink: 0 }}>
-        <ClockIcon width={14} height={14} color="rgba(255,255,255,0.85)" />
-        <span style={{ fontSize: 14, fontWeight: 800, color: '#fff', fontVariantNumeric: 'tabular-nums', letterSpacing: 0.3 }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 6, flexShrink: 0, background: 'var(--bg-surface-alt)', padding: '6px 10px', borderRadius: 10 }}>
+        <ClockIcon width={13} height={13} color="var(--accent)" />
+        <span style={{ fontSize: 13, fontWeight: 800, color: 'var(--accent)', fontVariantNumeric: 'tabular-nums', letterSpacing: 0.3 }}>
           {time}
         </span>
       </div>
