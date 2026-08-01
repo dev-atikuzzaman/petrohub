@@ -1,8 +1,9 @@
 // src/pages/SettingsTab.js
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useAuth } from '../lib/AuthContext';
 import { useTheme } from '../lib/ThemeContext';
-import { EyeIcon, EyeOffIcon, LoaderIcon, LockIcon, EditIcon, PlusIcon, CheckIcon } from '../components/Icons';
+import { EyeIcon, EyeOffIcon, LoaderIcon, LockIcon, EditIcon, PlusIcon, CheckIcon, BellIcon } from '../components/Icons';
+import { isPushSupported, getPushPermissionState, isSubscribed, subscribeToPush, unsubscribeFromPush } from '../lib/push';
 
 function Section({ title, icon, children, action }) {
   return (
@@ -48,6 +49,92 @@ function ThemeSection() {
           );
         })}
       </div>
+    </Section>
+  );
+}
+
+function NotificationSection({ currentUser }) {
+  const supported = isPushSupported();
+  const [enabled, setEnabled] = useState(false);
+  const [permission, setPermission] = useState('default');
+  const [loading, setLoading] = useState(true);
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState('');
+
+  useEffect(() => {
+    (async () => {
+      if (!supported) { setLoading(false); return; }
+      setPermission(await getPushPermissionState());
+      setEnabled(await isSubscribed());
+      setLoading(false);
+    })();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  async function handleToggle(checked) {
+    setError('');
+    setBusy(true);
+    if (checked) {
+      const { error } = await subscribeToPush(currentUser.id);
+      if (error) {
+        setError(error);
+      } else {
+        setEnabled(true);
+        setPermission('granted');
+      }
+    } else {
+      await unsubscribeFromPush();
+      setEnabled(false);
+    }
+    setBusy(false);
+  }
+
+  return (
+    <Section title="নোটিফিকেশন" icon="🔔">
+      {!supported ? (
+        <div style={{ fontSize: 13, color: 'var(--text-muted)' }}>
+          এই ব্রাউজার/ডিভাইসে পুশ নোটিফিকেশন সাপোর্ট করে না।
+        </div>
+      ) : loading ? (
+        <div style={{ display: 'flex', justifyContent: 'center', padding: 10 }}><LoaderIcon width={18} height={18} color="var(--accent)" /></div>
+      ) : (
+        <>
+          {error && <div style={{ background: 'var(--danger-soft)', color: 'var(--danger)', padding: '8px 12px', borderRadius: 8, fontSize: 12.5, marginBottom: 12 }}>{error}</div>}
+          {permission === 'denied' && (
+            <div style={{ background: 'var(--warning-soft)', color: 'var(--warning)', padding: '8px 12px', borderRadius: 8, fontSize: 12.5, marginBottom: 12 }}>
+              ব্রাউজার সেটিংসে নোটিফিকেশন ব্লক করা আছে — চালু করতে ব্রাউজারের সাইট সেটিংস থেকে অনুমতি দিন।
+            </div>
+          )}
+
+          <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+            <div style={{ width: 38, height: 38, borderRadius: 10, background: 'var(--accent-soft)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+              <BellIcon width={17} height={17} color="var(--accent)" />
+            </div>
+            <div style={{ flex: 1 }}>
+              <div style={{ fontSize: 13.5, fontWeight: 700, color: 'var(--text-primary)' }}>পুশ নোটিফিকেশন</div>
+              <div style={{ fontSize: 11.5, color: 'var(--text-muted)' }}>মন্তব্য, রিয়্যাক্ট ও গুরুত্বপূর্ণ আপডেটের নোটিফিকেশন পান</div>
+            </div>
+            <label style={{ position: 'relative', display: 'inline-block', width: 44, height: 25, flexShrink: 0, cursor: busy ? 'wait' : 'pointer' }}>
+              <input
+                type="checkbox"
+                checked={enabled}
+                disabled={busy || permission === 'denied'}
+                onChange={(e) => handleToggle(e.target.checked)}
+                style={{ opacity: 0, width: 0, height: 0 }}
+              />
+              <span style={{
+                position: 'absolute', inset: 0, borderRadius: 25, transition: '0.2s',
+                background: enabled ? 'var(--accent)' : 'var(--border)',
+              }}>
+                <span style={{
+                  position: 'absolute', height: 19, width: 19, left: enabled ? 22 : 3, bottom: 3,
+                  background: '#fff', borderRadius: '50%', transition: '0.2s', boxShadow: '0 1px 3px rgba(0,0,0,0.3)',
+                }} />
+              </span>
+            </label>
+          </div>
+        </>
+      )}
     </Section>
   );
 }
@@ -111,6 +198,7 @@ export default function SettingsTab({ currentUser, onEditProfile }) {
 
       {/* থিম */}
       <ThemeSection />
+      <NotificationSection currentUser={currentUser} />
 
       {/* ১. পাসওয়ার্ড পরিবর্তন */}
       <Section title="পাসওয়ার্ড পরিবর্তন" icon="🔐">
