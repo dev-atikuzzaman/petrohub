@@ -539,3 +539,60 @@ export async function deleteMeetingRoom(id) {
   if (error) console.error('❌ deleteMeetingRoom:', error.message);
   return { error };
 }
+
+// ------------------------------------------------------------
+// গ্লোবাল সার্চ — পোস্ট, নোট, ডকুমেন্ট, আপডেট ও সদস্য একসাথে খোঁজা
+// ------------------------------------------------------------
+export async function globalSearch(query) {
+  const q = query.trim();
+  if (!q) return { posts: [], notes: [], documents: [], updates: [], members: [] };
+
+  const like = `%${q}%`;
+  const LIMIT = 6;
+
+  const [postsRes, notesRes, docsRes, updatesRes, membersRes] = await Promise.all([
+    supabase
+      .from('posts')
+      .select('id, text, created_at, author:profiles!posts_user_id_fkey ( id, name, avatar_url )')
+      .ilike('text', like)
+      .order('created_at', { ascending: false })
+      .limit(LIMIT),
+    supabase
+      .from('notes')
+      .select('id, title, body, created_at')
+      .or(`title.ilike.${like},body.ilike.${like}`)
+      .order('created_at', { ascending: false })
+      .limit(LIMIT),
+    supabase
+      .from('documents')
+      .select('id, title, description, category, created_at')
+      .or(`title.ilike.${like},description.ilike.${like}`)
+      .order('created_at', { ascending: false })
+      .limit(LIMIT),
+    supabase
+      .from('important_updates')
+      .select('id, title, body, priority, created_at')
+      .or(`title.ilike.${like},body.ilike.${like}`)
+      .order('created_at', { ascending: false })
+      .limit(LIMIT),
+    supabase
+      .from('profiles')
+      .select('id, name, avatar_url, current_company, company, designation, department')
+      .or(`name.ilike.${like},current_company.ilike.${like},company.ilike.${like},designation.ilike.${like},department.ilike.${like}`)
+      .limit(LIMIT),
+  ]);
+
+  if (postsRes.error) console.error('❌ globalSearch posts:', postsRes.error.message);
+  if (notesRes.error) console.error('❌ globalSearch notes:', notesRes.error.message);
+  if (docsRes.error) console.error('❌ globalSearch documents:', docsRes.error.message);
+  if (updatesRes.error) console.error('❌ globalSearch updates:', updatesRes.error.message);
+  if (membersRes.error) console.error('❌ globalSearch members:', membersRes.error.message);
+
+  return {
+    posts: postsRes.data || [],
+    notes: notesRes.data || [],
+    documents: docsRes.data || [],
+    updates: updatesRes.data || [],
+    members: membersRes.data || [],
+  };
+}
