@@ -1,12 +1,33 @@
 // src/pages/FeedTab.js
-import React, { useState } from 'react';
+import React, { useMemo, useState } from 'react';
 import PostCard from '../components/PostCard';
 import { PlusIcon, WhatsAppIcon } from '../components/Icons';
 import CreatePostModal from '../components/CreatePostModal';
 
+function computeTopTags(posts, limit = 10) {
+  const counts = new Map();
+  posts.forEach((p) => {
+    (p.tags || []).forEach((t) => {
+      const key = t.toLowerCase();
+      const existing = counts.get(key);
+      counts.set(key, { tag: existing ? existing.tag : t, count: (existing?.count || 0) + 1 });
+    });
+  });
+  return Array.from(counts.values())
+    .sort((a, b) => b.count - a.count)
+    .slice(0, limit);
+}
+
 export default function FeedTab({ posts, currentUser, onUpdate, onOpenProfile }) {
   const [showCreate, setShowCreate] = useState(false);
+  const [activeTag, setActiveTag] = useState(null);
   const whatsappLink = process.env.REACT_APP_WHATSAPP_GROUP_LINK;
+
+  const topTags = useMemo(() => computeTopTags(posts), [posts]);
+
+  const visiblePosts = activeTag
+    ? posts.filter((p) => (p.tags || []).some((t) => t.toLowerCase() === activeTag.toLowerCase()))
+    : posts;
 
   return (
     <div style={{ maxWidth: 600, margin: '0 auto', padding: '16px 14px 90px' }}>
@@ -38,14 +59,45 @@ export default function FeedTab({ posts, currentUser, onUpdate, onOpenProfile })
         )}
       </div>
 
-      {posts.length === 0 ? (
+      {topTags.length > 0 && (
+        <div style={{ display: 'flex', gap: 7, overflowX: 'auto', paddingBottom: 4, marginBottom: 14 }}>
+          <button
+            onClick={() => setActiveTag(null)}
+            style={{
+              flexShrink: 0, padding: '6px 14px', borderRadius: 20, border: 'none', cursor: 'pointer', fontSize: 12.5, fontWeight: 700,
+              background: !activeTag ? 'var(--accent-gradient)' : 'var(--bg-surface-alt)',
+              color: !activeTag ? '#fff' : 'var(--text-secondary)',
+            }}
+          >
+            সব
+          </button>
+          {topTags.map(({ tag, count }) => (
+            <button
+              key={tag}
+              onClick={() => setActiveTag(activeTag?.toLowerCase() === tag.toLowerCase() ? null : tag)}
+              style={{
+                flexShrink: 0, padding: '6px 14px', borderRadius: 20, border: 'none', cursor: 'pointer', fontSize: 12.5, fontWeight: 700,
+                background: activeTag?.toLowerCase() === tag.toLowerCase() ? 'var(--accent-gradient)' : 'var(--bg-surface-alt)',
+                color: activeTag?.toLowerCase() === tag.toLowerCase() ? '#fff' : 'var(--text-secondary)',
+                whiteSpace: 'nowrap',
+              }}
+            >
+              #{tag} <span style={{ opacity: 0.7 }}>{count}</span>
+            </button>
+          ))}
+        </div>
+      )}
+
+      {visiblePosts.length === 0 ? (
         <div style={{ textAlign: 'center', padding: '60px 20px', color: 'var(--text-muted)' }}>
           <div style={{ fontSize: 40, marginBottom: 10 }}>📭</div>
-          <div style={{ fontSize: 14 }}>এখনো কোনো পোস্ট নেই। প্রথম পোস্টটি করুন!</div>
+          <div style={{ fontSize: 14 }}>
+            {activeTag ? `#${activeTag} ট্যাগে কোনো পোস্ট নেই` : 'এখনো কোনো পোস্ট নেই। প্রথম পোস্টটি করুন!'}
+          </div>
         </div>
       ) : (
-        posts.map((post) => (
-          <PostCard key={post.id} post={post} currentUser={currentUser} onUpdate={onUpdate} onOpenProfile={onOpenProfile} />
+        visiblePosts.map((post) => (
+          <PostCard key={post.id} post={post} currentUser={currentUser} onUpdate={onUpdate} onOpenProfile={onOpenProfile} onFilterTag={setActiveTag} />
         ))
       )}
 
