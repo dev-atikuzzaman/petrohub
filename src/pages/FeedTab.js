@@ -1,8 +1,9 @@
 // src/pages/FeedTab.js
-import React, { useMemo, useState } from 'react';
+import React, { useMemo, useState, useEffect } from 'react';
 import PostCard from '../components/PostCard';
-import { PlusIcon, WhatsAppIcon } from '../components/Icons';
+import { PlusIcon, WhatsAppIcon, BookmarkIcon } from '../components/Icons';
 import CreatePostModal from '../components/CreatePostModal';
+import { getSavedPostIds, toggleSavePost } from '../lib/dataService';
 
 function computeTopTags(posts, limit = 10) {
   const counts = new Map();
@@ -21,13 +22,41 @@ function computeTopTags(posts, limit = 10) {
 export default function FeedTab({ posts, currentUser, onUpdate, onOpenProfile }) {
   const [showCreate, setShowCreate] = useState(false);
   const [activeTag, setActiveTag] = useState(null);
+  const [showSavedOnly, setShowSavedOnly] = useState(false);
+  const [savedIds, setSavedIds] = useState(new Set());
   const whatsappLink = process.env.REACT_APP_WHATSAPP_GROUP_LINK;
+
+  useEffect(() => {
+    getSavedPostIds(currentUser.id).then((ids) => setSavedIds(new Set(ids)));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [currentUser.id]);
+
+  async function handleToggleSave(postId, currentlySaved) {
+    // আগে UI-তে সাথে সাথে বদলে দেওয়া হচ্ছে (optimistic), তারপর সার্ভারে পাঠানো হচ্ছে
+    setSavedIds((prev) => {
+      const next = new Set(prev);
+      if (currentlySaved) next.delete(postId); else next.add(postId);
+      return next;
+    });
+    const { error } = await toggleSavePost(currentUser.id, postId, currentlySaved);
+    if (error) {
+      // ব্যর্থ হলে আগের অবস্থায় ফিরিয়ে নেওয়া
+      setSavedIds((prev) => {
+        const next = new Set(prev);
+        if (currentlySaved) next.add(postId); else next.delete(postId);
+        return next;
+      });
+    }
+  }
 
   const topTags = useMemo(() => computeTopTags(posts), [posts]);
 
-  const visiblePosts = activeTag
+  let visiblePosts = activeTag
     ? posts.filter((p) => (p.tags || []).some((t) => t.toLowerCase() === activeTag.toLowerCase()))
     : posts;
+  if (showSavedOnly) {
+    visiblePosts = visiblePosts.filter((p) => savedIds.has(p.id));
+  }
 
   return (
     <div style={{ maxWidth: 600, margin: '0 auto', padding: '16px 14px 90px' }}>
@@ -57,6 +86,18 @@ export default function FeedTab({ posts, currentUser, onUpdate, onOpenProfile })
             <WhatsAppIcon width={18} height={18} />
           </a>
         )}
+        <button
+          onClick={() => setShowSavedOnly(!showSavedOnly)}
+          title="সেভ করা পোস্ট"
+          style={{
+            display: 'flex', alignItems: 'center', justifyContent: 'center', width: 48, flexShrink: 0,
+            padding: '13px', borderRadius: 14, border: 'none',
+            background: showSavedOnly ? 'var(--accent-gradient)' : 'var(--bg-surface-alt)',
+            color: showSavedOnly ? '#fff' : 'var(--text-secondary)', cursor: 'pointer',
+          }}
+        >
+          <BookmarkIcon width={18} height={18} fill={showSavedOnly ? '#fff' : 'none'} />
+        </button>
       </div>
 
       {topTags.length > 0 && (
@@ -92,12 +133,21 @@ export default function FeedTab({ posts, currentUser, onUpdate, onOpenProfile })
         <div style={{ textAlign: 'center', padding: '60px 20px', color: 'var(--text-muted)' }}>
           <div style={{ fontSize: 40, marginBottom: 10 }}>📭</div>
           <div style={{ fontSize: 14 }}>
-            {activeTag ? `#${activeTag} ট্যাগে কোনো পোস্ট নেই` : 'এখনো কোনো পোস্ট নেই। প্রথম পোস্টটি করুন!'}
+            {showSavedOnly ? 'কোনো সেভ করা পোস্ট নেই' : activeTag ? `#${activeTag} ট্যাগে কোনো পোস্ট নেই` : 'এখনো কোনো পোস্ট নেই। প্রথম পোস্টটি করুন!'}
           </div>
         </div>
       ) : (
         visiblePosts.map((post) => (
-          <PostCard key={post.id} post={post} currentUser={currentUser} onUpdate={onUpdate} onOpenProfile={onOpenProfile} onFilterTag={setActiveTag} />
+          <PostCard
+            key={post.id}
+            post={post}
+            currentUser={currentUser}
+            onUpdate={onUpdate}
+            onOpenProfile={onOpenProfile}
+            onFilterTag={setActiveTag}
+            isSaved={savedIds.has(post.id)}
+            onToggleSave={handleToggleSave}
+          />
         ))
       )}
 
