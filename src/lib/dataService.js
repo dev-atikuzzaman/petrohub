@@ -596,3 +596,33 @@ export async function globalSearch(query) {
     members: membersRes.data || [],
   };
 }
+
+// ------------------------------------------------------------
+// সেভ/বুকমার্ক করা পোস্ট
+// ------------------------------------------------------------
+export async function getSavedPostIds(userId) {
+  const { data, error } = await supabase
+    .from('saved_posts')
+    .select('post_id')
+    .eq('user_id', userId);
+  if (error) { console.error('❌ getSavedPostIds:', error.message); return []; }
+  return data.map((r) => r.post_id);
+}
+
+export async function toggleSavePost(userId, postId, currentlySaved) {
+  if (currentlySaved) {
+    const { error } = await supabase
+      .from('saved_posts')
+      .delete()
+      .eq('user_id', userId)
+      .eq('post_id', postId);
+    if (error) console.error('❌ toggleSavePost (remove):', error.message);
+    return { error, saved: false };
+  } else {
+    const { error } = await supabase
+      .from('saved_posts')
+      .insert({ user_id: userId, post_id: postId });
+    if (error) console.error('❌ toggleSavePost (add):', error.message);
+    return { error, saved: true };
+  }
+}
