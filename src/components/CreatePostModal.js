@@ -13,7 +13,35 @@ export default function CreatePostModal({ currentUser, onClose, onCreated }) {
   const [compressing, setCompressing] = useState(false);
   const [privacy, setPrivacy] = useState('public');
   const [showPrivacyMenu, setShowPrivacyMenu] = useState(false);
+  const [tags, setTags] = useState([]);
+  const [tagInput, setTagInput] = useState('');
   const privacyRef = useRef(null);
+
+  function cleanTag(raw) {
+    return raw.trim().replace(/^#+/, '').replace(/\s+/g, ' ').slice(0, 24);
+  }
+
+  function addTag() {
+    const clean = cleanTag(tagInput);
+    if (!clean) return;
+    if (!tags.some((t) => t.toLowerCase() === clean.toLowerCase())) {
+      setTags([...tags, clean]);
+    }
+    setTagInput('');
+  }
+
+  function handleTagKeyDown(e) {
+    if (e.key === 'Enter' || e.key === ',') {
+      e.preventDefault();
+      addTag();
+    } else if (e.key === 'Backspace' && !tagInput && tags.length > 0) {
+      setTags(tags.slice(0, -1));
+    }
+  }
+
+  function removeTag(t) {
+    setTags(tags.filter((x) => x !== t));
+  }
 
   useEffect(() => {
     function handleClickOutside(e) {
@@ -45,7 +73,7 @@ export default function CreatePostModal({ currentUser, onClose, onCreated }) {
   async function handlePost() {
     if (!text.trim() && !imageFile) return;
     setPosting(true);
-    const { error } = await createPost(currentUser.id, text.trim(), imageFile, privacy);
+    const { error } = await createPost(currentUser.id, text.trim(), imageFile, privacy, tags);
     setPosting(false);
     if (!error) {
       onCreated && onCreated();
@@ -132,6 +160,29 @@ export default function CreatePostModal({ currentUser, onClose, onCreated }) {
             background: 'var(--bg-surface-alt)', color: 'var(--text-primary)',
           }}
         />
+
+        <div style={{
+          display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: 6, marginTop: 10, padding: '6px 10px',
+          border: `1.5px solid var(--border)`, borderRadius: 12, background: 'var(--bg-surface-alt)',
+        }}>
+          {tags.map((t) => (
+            <span key={t} style={{
+              display: 'flex', alignItems: 'center', gap: 4, padding: '4px 9px', borderRadius: 20,
+              background: 'var(--accent-soft)', color: 'var(--accent)', fontSize: 12, fontWeight: 700,
+            }}>
+              #{t}
+              <XIcon width={10} height={10} style={{ cursor: 'pointer' }} onClick={() => removeTag(t)} />
+            </span>
+          ))}
+          <input
+            value={tagInput}
+            onChange={(e) => setTagInput(e.target.value)}
+            onKeyDown={handleTagKeyDown}
+            onBlur={addTag}
+            placeholder={tags.length === 0 ? 'ট্যাগ যোগ করুন (যেমন সেফটি, প্রসেস) — Enter চাপুন' : 'আরও ট্যাগ...'}
+            style={{ flex: 1, minWidth: 100, border: 'none', outline: 'none', background: 'none', fontSize: 12.5, color: 'var(--text-primary)', padding: '4px 2px' }}
+          />
+        </div>
 
         {compressing && !imagePreview && (
           <div style={{

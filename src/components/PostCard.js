@@ -58,7 +58,7 @@ function useLongPress(onLongPress, onQuickTap, delay = 400) {
   };
 }
 
-export default function PostCard({ post, currentUser, onUpdate, onOpenProfile }) {
+export default function PostCard({ post, currentUser, onUpdate, onOpenProfile, onFilterTag }) {
   const [showEmojiPicker, setShowEmojiPicker] = useState(false);
   const [showComments, setShowComments] = useState(false);
   const [commentText, setCommentText] = useState('');
@@ -317,6 +317,23 @@ export default function PostCard({ post, currentUser, onUpdate, onOpenProfile })
           alt="post"
           style={{ width: '100%', borderRadius: 14, marginTop: 10, maxHeight: 400, objectFit: 'cover' }}
         />
+      )}
+
+      {post.tags && post.tags.length > 0 && (
+        <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6, marginTop: 10 }}>
+          {post.tags.map((t) => (
+            <span
+              key={t}
+              onClick={() => onFilterTag && onFilterTag(t)}
+              style={{
+                padding: '3px 10px', borderRadius: 20, background: 'var(--accent-soft)', color: 'var(--accent)',
+                fontSize: 11.5, fontWeight: 700, cursor: onFilterTag ? 'pointer' : 'default',
+              }}
+            >
+              #{t}
+            </span>
+          ))}
+        </div>
       )}
 
       {totalReactions > 0 && (
