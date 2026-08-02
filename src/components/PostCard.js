@@ -1,7 +1,7 @@
 // src/components/PostCard.js
 import React, { useState, useEffect, useRef } from 'react';
 import Avatar from './Avatar';
-import { HeartIcon, CommentIcon, SendIcon, TrashIcon, MoreIcon, EditIcon, LockIcon, GlobeIcon, CheckIcon, LoaderIcon, XIcon } from './Icons';
+import { HeartIcon, CommentIcon, SendIcon, TrashIcon, MoreIcon, EditIcon, LockIcon, GlobeIcon, CheckIcon, LoaderIcon, XIcon, BookmarkIcon } from './Icons';
 import { toggleReaction, toggleCommentReaction, createComment, deletePost, deleteComment, updatePost } from '../lib/dataService';
 
 const EMOJIS = ['👍', '❤️', '😂', '😮', '😢', '🔥'];
@@ -58,7 +58,7 @@ function useLongPress(onLongPress, onQuickTap, delay = 400) {
   };
 }
 
-export default function PostCard({ post, currentUser, onUpdate, onOpenProfile, onFilterTag }) {
+export default function PostCard({ post, currentUser, onUpdate, onOpenProfile, onFilterTag, isSaved, onToggleSave }) {
   const [showEmojiPicker, setShowEmojiPicker] = useState(false);
   const [showComments, setShowComments] = useState(false);
   const [commentText, setCommentText] = useState('');
@@ -371,6 +371,21 @@ export default function PostCard({ post, currentUser, onUpdate, onOpenProfile, o
         >
           <CommentIcon width={16} height={16} /> মন্তব্য {post.comments?.length > 0 && `(${post.comments.length})`}
         </button>
+
+        {onToggleSave && (
+          <button
+            onClick={() => onToggleSave(post.id, isSaved)}
+            title={isSaved ? 'সেভ তালিকা থেকে সরান' : 'সেভ করুন'}
+            style={{
+              width: 40, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0,
+              padding: '8px', borderRadius: 10, border: 'none',
+              background: isSaved ? 'var(--accent-soft)' : 'var(--bg-surface-alt)',
+              color: isSaved ? 'var(--accent)' : 'var(--text-secondary)', cursor: 'pointer',
+            }}
+          >
+            <BookmarkIcon width={16} height={16} fill={isSaved ? 'var(--accent)' : 'none'} />
+          </button>
+        )}
 
         {showEmojiPicker && (
           <div style={{
