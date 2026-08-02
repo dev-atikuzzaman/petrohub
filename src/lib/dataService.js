@@ -66,7 +66,7 @@ export async function getPostsWithDetails() {
   return data;
 }
 
-export async function createPost(userId, text, imageFile, privacy = 'public') {
+export async function createPost(userId, text, imageFile, privacy = 'public', tags = []) {
   let image_url = null;
 
   if (imageFile) {
@@ -86,7 +86,7 @@ export async function createPost(userId, text, imageFile, privacy = 'public') {
 
   const { data, error } = await supabase
     .from('posts')
-    .insert({ user_id: userId, text, image_url, privacy })
+    .insert({ user_id: userId, text, image_url, privacy, tags })
     .select()
     .single();
 
