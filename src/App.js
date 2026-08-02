@@ -20,7 +20,8 @@ import MeetingTab from './pages/MeetingTab';
 import ThemeSwitcher from './components/ThemeSwitcher';
 import { ThemeProvider } from './lib/ThemeContext';
 import { getAllProfiles, getPostsWithDetails, subscribeToPosts, subscribeToProfiles } from './lib/dataService';
-import { HomeIcon, UsersIcon, ChartIcon, LogOutIcon, ShieldIcon, WifiOffIcon, LoaderIcon, NoteIcon, BellIcon, FolderIcon, GlobeIcon, VideoIcon } from './components/Icons';
+import { HomeIcon, UsersIcon, ChartIcon, LogOutIcon, ShieldIcon, WifiOffIcon, LoaderIcon, NoteIcon, BellIcon, FolderIcon, GlobeIcon, VideoIcon, SearchIcon } from './components/Icons';
+import GlobalSearchModal from './components/GlobalSearchModal';
 
 // SettingsIcon inline যোগ করা হলো
 const SettingsIcon = (p) => <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...p}><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>;
@@ -32,6 +33,7 @@ function AppShell() {
   const [posts, setPosts] = useState([]);
   const [dataLoading, setDataLoading] = useState(true);
   const [viewingProfile, setViewingProfile] = useState(null);
+  const [showSearch, setShowSearch] = useState(false);
   const [profileEditIntent, setProfileEditIntent] = useState(false);
   const [showAdminPanel, setShowAdminPanel] = useState(false);
   const [isOnline, setIsOnline] = useState(navigator.onLine);
@@ -178,6 +180,13 @@ function AppShell() {
         </div>
 
         <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+          <button
+            onClick={() => setShowSearch(true)}
+            title="সার্চ করুন"
+            style={{ background: 'var(--bg-surface-alt)', border: 'none', borderRadius: 10, padding: 8, cursor: 'pointer', display: 'flex', color: 'var(--text-secondary)' }}
+          >
+            <SearchIcon width={17} height={17} />
+          </button>
           <ThemeSwitcher />
           {isAdmin && (
             <button
@@ -266,6 +275,14 @@ function AppShell() {
       )}
 
       {showAdminPanel && <AdminPanel onClose={() => setShowAdminPanel(false)} currentUser={profile} />}
+
+      {showSearch && (
+        <GlobalSearchModal
+          onClose={() => setShowSearch(false)}
+          onNavigateTab={(tabKey) => setTab(tabKey)}
+          onOpenProfile={(member) => setViewingProfile(member)}
+        />
+      )}
     </div>
   );
 }
