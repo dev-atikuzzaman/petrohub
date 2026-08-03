@@ -2,7 +2,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import Avatar from './Avatar';
 import { HeartIcon, CommentIcon, SendIcon, TrashIcon, MoreIcon, EditIcon, LockIcon, GlobeIcon, CheckIcon, LoaderIcon, XIcon, BookmarkIcon } from './Icons';
-import { toggleReaction, toggleCommentReaction, createComment, deletePost, deleteComment, updatePost } from '../lib/dataService';
+import { toggleReaction, toggleCommentReaction, createComment, deletePost, deleteComment, updatePost, togglePinPost } from '../lib/dataService';
 
 const EMOJIS = ['👍', '❤️', '😂', '😮', '😢', '🔥'];
 
@@ -58,7 +58,7 @@ function useLongPress(onLongPress, onQuickTap, delay = 400) {
   };
 }
 
-export default function PostCard({ post, currentUser, onUpdate, onOpenProfile, onFilterTag, isSaved, onToggleSave }) {
+export default function PostCard({ post, currentUser, onUpdate, onOpenProfile, onFilterTag, isSaved, onToggleSave, isAdmin }) {
   const [showEmojiPicker, setShowEmojiPicker] = useState(false);
   const [showComments, setShowComments] = useState(false);
   const [commentText, setCommentText] = useState('');
@@ -135,6 +135,12 @@ export default function PostCard({ post, currentUser, onUpdate, onOpenProfile, o
     onUpdate && onUpdate();
   }
 
+  async function handlePin() {
+    setShowMenu(false);
+    await togglePinPost(post.id, post.pinned);
+    onUpdate && onUpdate();
+  }
+
   async function handleDeleteComment(commentId) {
     await deleteComment(commentId);
     onUpdate && onUpdate();
@@ -167,7 +173,13 @@ export default function PostCard({ post, currentUser, onUpdate, onOpenProfile, o
     <div style={{
       background: 'var(--bg-surface)', borderRadius: 18, padding: 18, marginBottom: 14,
       boxShadow: '0 2px 12px rgba(0,0,0,0.06)', animation: 'fadeIn 0.3s ease',
+      border: post.pinned ? '1.5px solid var(--accent)' : '1.5px solid transparent',
     }}>
+      {post.pinned && (
+        <div style={{ display: 'flex', alignItems: 'center', gap: 5, color: 'var(--accent)', fontSize: 11.5, fontWeight: 700, marginBottom: 10 }}>
+          <BookmarkIcon width={12} height={12} fill="var(--accent)" /> পিন করা পোস্ট
+        </div>
+      )}
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
           <Avatar
@@ -196,7 +208,7 @@ export default function PostCard({ post, currentUser, onUpdate, onOpenProfile, o
           </div>
         </div>
 
-        {isOwn && (
+        {(isOwn || isAdmin) && (
           <div ref={menuRef} style={{ position: 'relative' }}>
             <button onClick={() => { setShowMenu(!showMenu); setShowPrivacyMenu(false); }} style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-muted)', padding: 4 }}>
               {updatingPrivacy ? <LoaderIcon width={18} height={18} /> : <MoreIcon width={18} height={18} />}
@@ -206,6 +218,20 @@ export default function PostCard({ post, currentUser, onUpdate, onOpenProfile, o
                 position: 'absolute', right: 0, top: 28, background: 'var(--bg-surface)', borderRadius: 12,
                 boxShadow: '0 6px 20px rgba(0,0,0,0.15)', zIndex: 10, overflow: 'visible', minWidth: 170,
               }}>
+                {isAdmin && (
+                  <button
+                    onClick={handlePin}
+                    style={{
+                      display: 'flex', alignItems: 'center', gap: 8, padding: '10px 16px', border: 'none',
+                      background: 'none', color: 'var(--text-primary)', fontSize: 13, fontWeight: 600, cursor: 'pointer', width: '100%',
+                    }}
+                  >
+                    <BookmarkIcon width={14} height={14} fill={post.pinned ? 'var(--accent)' : 'none'} color="var(--accent)" />
+                    {post.pinned ? 'আনপিন করুন' : 'ফিডের উপরে পিন করুন'}
+                  </button>
+                )}
+
+                {isOwn && (
                 <button
                   onClick={() => { setShowMenu(false); setIsEditing(true); }}
                   style={{
@@ -215,7 +241,9 @@ export default function PostCard({ post, currentUser, onUpdate, onOpenProfile, o
                 >
                   <EditIcon width={14} height={14} /> এডিট করুন
                 </button>
+                )}
 
+                {isOwn && (
                 <div style={{ position: 'relative' }}>
                   <button
                     onClick={() => setShowPrivacyMenu(!showPrivacyMenu)}
@@ -257,7 +285,9 @@ export default function PostCard({ post, currentUser, onUpdate, onOpenProfile, o
                     </div>
                   )}
                 </div>
+                )}
 
+                {isOwn && (
                 <button
                   onClick={() => { setShowMenu(false); handleDeletePost(); }}
                   style={{
@@ -267,6 +297,7 @@ export default function PostCard({ post, currentUser, onUpdate, onOpenProfile, o
                 >
                   <TrashIcon width={14} height={14} /> মুছে ফেলুন
                 </button>
+                )}
               </div>
             )}
           </div>
