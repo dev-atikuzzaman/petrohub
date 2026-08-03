@@ -57,6 +57,7 @@ export async function getPostsWithDetails() {
       comments ( id, text, created_at, parent_id, user_id, author:profiles!comments_user_id_fkey ( id, name, avatar_url ), comment_reactions ( id, emoji, user_id, user:profiles!comment_reactions_user_id_fkey ( id, name, avatar_url ) ) ),
       reactions ( id, emoji, user_id, user:profiles!reactions_user_id_fkey ( id, name, avatar_url ) )
     `)
+    .order('pinned', { ascending: false })
     .order('created_at', { ascending: false });
 
   if (error) {
@@ -625,4 +626,16 @@ export async function toggleSavePost(userId, postId, currentlySaved) {
     if (error) console.error('❌ toggleSavePost (add):', error.message);
     return { error, saved: true };
   }
+}
+
+// ------------------------------------------------------------
+// পিন করা পোস্ট — শুধু অ্যাডমিন করতে পারবেন (RLS দিয়ে নিশ্চিত করা)
+// ------------------------------------------------------------
+export async function togglePinPost(postId, currentlyPinned) {
+  const { error } = await supabase
+    .from('posts')
+    .update({ pinned: !currentlyPinned })
+    .eq('id', postId);
+  if (error) console.error('❌ togglePinPost:', error.message);
+  return { error };
 }
