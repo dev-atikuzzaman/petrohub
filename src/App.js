@@ -218,7 +218,7 @@ function AppShell() {
             <div style={{ color: 'var(--text-secondary)', fontSize: 13, marginTop: 10 }}>ডেটা লোড হচ্ছে...</div>
           </div>
         ) : tab === 'feed' ? (
-          <FeedTab posts={posts} currentUser={profile} onUpdate={loadData} onOpenProfile={(p) => p && setViewingProfile(members.find((m) => m.id === p.id) || p)} />
+          <FeedTab posts={posts} currentUser={profile} onUpdate={loadData} onOpenProfile={(p) => p && setViewingProfile(members.find((m) => m.id === p.id) || p)} isAdmin={isAdmin} />
         ) : tab === 'members' ? (
           <MembersTab members={members} onOpenProfile={setViewingProfile} />
         ) : tab === 'updates' ? (
