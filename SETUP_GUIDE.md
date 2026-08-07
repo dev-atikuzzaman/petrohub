@@ -229,6 +229,63 @@ Admin Panel-এর "নতুন ইউজার" ট্যাব থেকে �
 
 ---
 
+## 🔔 পুশ নোটিফিকেশন চালু করা
+
+মন্তব্য/রিয়্যাক্ট/গুরুত্বপূর্ণ আপডেট হলে সদস্যদের ফোনে/ব্রাউজারে সরাসরি নোটিফিকেশন
+যাবে — অ্যাপ বন্ধ থাকলেও। এটা সম্পূর্ণ ফ্রি Web Push API দিয়ে বানানো (VAPID key
+জোড়া ব্যবহার করে) — কোনো Firebase বা paid সার্ভিস লাগে না।
+
+### ধাপ ১: Supabase মাইগ্রেশন
+
+`supabase/migration_7_push_subscriptions.sql` Supabase SQL Editor-এ Run করুন।
+
+### ধাপ ২: VAPID Key (আগে থেকেই বানানো আছে)
+
+নিচের key জোড়া ব্যবহার করতে পারেন (একবারই বানানো হয়েছে, বদলানোর দরকার নেই):
+
+```
+PUBLIC:  BAc7wav9_zP7Lc686g9b6O9--yah5rj_lVMNyOUrSvohJQ5Q1QBi_jhhxXi0vPdebL7IBzEPTTOzGx7qNQ_O1oE
+PRIVATE: 1jkNDjT4zur1tXLCTbBLw7WyOv3fzsdpK8Jc_WyZ85g
+```
+
+⚠️ PRIVATE key-টা গোপন রাখবেন (শুধু Vercel env var-এ থাকবে, কোথাও শেয়ার করবেন না)।
+PUBLIC key ব্রাউজারে যাবে বলে সেটা প্রকাশ্য হলেও সমস্যা নেই।
+
+### ধাপ ৩: Vercel Environment Variables
+
+| নাম | মান |
+|---|---|
+| `REACT_APP_VAPID_PUBLIC_KEY` | উপরের PUBLIC key |
+| `VAPID_PRIVATE_KEY` | উপরের PRIVATE key |
+
+(`NOTIFY_WEBHOOK_SECRET` আর `SUPABASE_SERVICE_ROLE_KEY` আগে থেকেই থাকলে সেগুলো
+আবার লাগবে না — না থাকলে "Admin Panel থেকে ইউজার তৈরি" সেকশন দেখুন।)
+
+**@মেনশন নোটিফিকেশনের জন্য** `supabase/migration_11_mentions.sql` টাও Run করতে হবে
+(posts/comments টেবিলে mentions কলাম যোগ করে)।
+
+### ধাপ ৪: Supabase Database Webhooks (৪টা)
+
+Supabase Dashboard → **Database → Webhooks** → **Create a new hook** — এই ৪টা টেবিলের
+জন্য আলাদা আলাদা করে বানান (প্রতিটার সেটিংস একই রকম, শুধু Table আলাদা):
+
+| Table | Events | Method | URL | Header |
+|---|---|---|---|---|
+| `posts` | Insert | POST | `https://yourdomain.vercel.app/api/send-push` | `x-webhook-secret: <NOTIFY_WEBHOOK_SECRET এর মান>` |
+| `comments` | Insert | POST | একই URL | একই header |
+| `reactions` | Insert | POST | একই URL | একই header |
+| `important_updates` | Insert | POST | একই URL | একই header |
+
+(`posts` টেবিলের webhook-টা নতুন যোগ হয়েছে — এটা @মেনশন নোটিফিকেশনের জন্য দরকার।
+আগে থেকে বাকি ৩টা বানানো থাকলে শুধু এই একটা নতুন করে যোগ করলেই হবে।)
+
+### ব্যবহারকারীরা কীভাবে চালু করবেন
+
+প্রতিটা সদস্য নিজে Settings → নোটিফিকেশন থেকে টগল অন করবেন (ব্রাউজার
+অনুমতি চাইবে, "Allow" দিতে হবে)। যিনি টগল অন করেননি, তিনি নোটিফিকেশন পাবেন না।
+
+---
+
 ## 🔑 পাসওয়ার্ড রিসেট (ইমেইল) চালু করা
 
 লগইন স্ক্রিনে "পাসওয়ার্ড ভুলে গেছেন?" ফিচারটা কাজ করার জন্য Supabase-কে
