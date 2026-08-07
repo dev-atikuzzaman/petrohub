@@ -19,7 +19,7 @@ function computeTopTags(posts, limit = 10) {
     .slice(0, limit);
 }
 
-export default function FeedTab({ posts, currentUser, onUpdate, onOpenProfile, isAdmin }) {
+export default function FeedTab({ posts, currentUser, onUpdate, onOpenProfile, isAdmin, members = [] }) {
   const [showCreate, setShowCreate] = useState(false);
   const [activeTag, setActiveTag] = useState(null);
   const [showSavedOnly, setShowSavedOnly] = useState(false);
@@ -148,6 +148,7 @@ export default function FeedTab({ posts, currentUser, onUpdate, onOpenProfile, i
             isSaved={savedIds.has(post.id)}
             onToggleSave={handleToggleSave}
             isAdmin={isAdmin}
+            members={members}
           />
         ))
       )}
@@ -155,6 +156,7 @@ export default function FeedTab({ posts, currentUser, onUpdate, onOpenProfile, i
       {showCreate && (
         <CreatePostModal
           currentUser={currentUser}
+          members={members}
           onClose={() => setShowCreate(false)}
           onCreated={onUpdate}
         />
