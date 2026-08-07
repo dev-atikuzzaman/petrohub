@@ -48,7 +48,9 @@ export default async function handler(req, res) {
   const supabaseAdmin = getServiceClient();
 
   try {
-    if (table === 'comments') {
+    if (table === 'posts') {
+      await handlePostNotification(supabaseAdmin, record);
+    } else if (table === 'comments') {
       await handleCommentNotification(supabaseAdmin, record);
     } else if (table === 'reactions') {
       await handleReactionNotification(supabaseAdmin, record);
@@ -87,6 +89,24 @@ async function sendToUser(supabaseAdmin, userId, payload) {
   await Promise.allSettled(subs.map((sub) => sendToSubscription(supabaseAdmin, sub, payload)));
 }
 
+async function notifyMentions(supabaseAdmin, mentionUserIds, authorId, authorName, payload, alreadyNotified = new Set()) {
+  const uniqueIds = [...new Set(mentionUserIds || [])].filter((id) => id !== authorId && !alreadyNotified.has(id));
+  await Promise.allSettled(uniqueIds.map((id) => sendToUser(supabaseAdmin, id, payload)));
+}
+
+async function handlePostNotification(supabaseAdmin, post) {
+  if (!post.mentions || post.mentions.length === 0) return;
+
+  const { data: author } = await supabaseAdmin.from('profiles').select('name').eq('id', post.user_id).single();
+  const authorName = author?.name || 'একজন সদস্য';
+
+  await notifyMentions(supabaseAdmin, post.mentions, post.user_id, authorName, {
+    title: `${authorName} আপনাকে একটা পোস্টে মেনশন করেছেন`,
+    body: (post.text || '').slice(0, 100),
+    url: '/',
+  });
+}
+
 async function handleCommentNotification(supabaseAdmin, comment) {
   const { data: author } = await supabaseAdmin.from('profiles').select('name').eq('id', comment.user_id).single();
   const commenterName = author?.name || 'একজন সদস্য';
@@ -106,12 +126,20 @@ async function handleCommentNotification(supabaseAdmin, comment) {
 
   const { data: post } = await supabaseAdmin.from('posts').select('user_id').eq('id', comment.post_id).single();
   if (post && post.user_id !== comment.user_id && !notified.has(post.user_id)) {
+    notified.add(post.user_id);
     await sendToUser(supabaseAdmin, post.user_id, {
       title: `${commenterName} আপনার পোস্টে মন্তব্য করেছেন`,
       body: comment.text.slice(0, 100),
       url: '/',
     });
   }
+
+  // যাদের এই মন্তব্যে @মেনশন করা হয়েছে (উপরে আগেই নোটিফাই হওয়া কাউকে বাদ দিয়ে)
+  await notifyMentions(supabaseAdmin, comment.mentions, comment.user_id, commenterName, {
+    title: `${commenterName} আপনাকে একটা মন্তব্যে মেনশন করেছেন`,
+    body: comment.text.slice(0, 100),
+    url: '/',
+  }, notified);
 }
 
 async function handleReactionNotification(supabaseAdmin, reaction) {
