@@ -95,7 +95,7 @@ export default function ResetPasswordScreen() {
     setLoading(false);
 
     if (error) {
-      setError(error.message);
+      setError(error?.message || 'পাসওয়ার্ড পরিবর্তন করা যায়নি, আবার চেষ্টা করুন।');
     } else {
       setSuccess('✅ পাসওয়ার্ড বদলানো হয়েছে! এখন নতুন পাসওয়ার্ড দিয়ে লগইন করুন।');
     }

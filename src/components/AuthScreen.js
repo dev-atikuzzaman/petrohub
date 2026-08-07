@@ -118,7 +118,7 @@ export default function AuthScreen() {
     setLoading(false);
 
     if (error) {
-      setError(translateError(error.message));
+      setError(translateError(error?.message));
     } else {
       setSuccess('✅ রিসেট লিংক পাঠানো হয়েছে! ইমেইল (বা Spam ফোল্ডার) চেক করুন।');
     }
@@ -144,7 +144,7 @@ export default function AuthScreen() {
         }
         const { error } = await signUp(email.trim(), password, name.trim());
         if (error) {
-          setError(translateError(error.message));
+          setError(translateError(error?.message));
         } else {
           setSuccess('✅ Account তৈরি হয়েছে! এখন লগইন করুন।');
           setMode('login');
@@ -152,7 +152,7 @@ export default function AuthScreen() {
       } else {
         const { error } = await signIn(email.trim(), password);
         if (error) {
-          setError(translateError(error.message));
+          setError(translateError(error?.message));
         }
       }
     } catch (err) {
@@ -163,11 +163,18 @@ export default function AuthScreen() {
   }
 
   function translateError(msg) {
+    // error.message কখনো কখনো খালি/undefined/অবজেক্ট হয়ে আসতে পারে (নেটওয়ার্ক
+    // সমস্যা, SMTP configuration ইস্যু ইত্যাদির কারণে) — সেক্ষেত্রে যেন কখনোই
+    // "{}" বা অন্য কোনো অদ্ভুত জিনিস স্ক্রিনে না দেখায়, তার জন্য এই safety check
+    if (!msg || typeof msg !== 'string') {
+      return 'কিছু একটা সমস্যা হয়েছে। আবার চেষ্টা করুন, অথবা কিছুক্ষণ পর চেষ্টা করুন।';
+    }
     if (/invalid login credentials/i.test(msg)) return 'ইমেইল বা পাসওয়ার্ড ভুল';
     if (/already registered/i.test(msg)) return 'এই ইমেইল দিয়ে আগেই account আছে, লগইন করুন';
     if (/email/i.test(msg) && /invalid/i.test(msg)) return 'সঠিক ইমেইল দিন';
     if (/email not confirmed/i.test(msg)) return 'ইমেইল ভেরিফাই করা হয়নি। ইনবক্স (বা Spam ফোল্ডার) চেক করে confirmation লিংকে ক্লিক করুন।';
     if (/rate limit|too many requests/i.test(msg)) return 'একটু বেশি চেষ্টা হয়ে গেছে, কিছুক্ষণ পর আবার চেষ্টা করুন';
+    if (/smtp|550|553|mail/i.test(msg)) return 'ইমেইল পাঠানো যায়নি — মেইল সার্ভারে সমস্যা হয়েছে, অ্যাডমিনকে জানান';
     return msg;
   }
 
