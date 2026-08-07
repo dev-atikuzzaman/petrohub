@@ -54,7 +54,7 @@ export async function getPostsWithDetails() {
     .select(`
       *,
       author:profiles!posts_user_id_fkey ( id, name, avatar_url, designation, company, current_company ),
-      comments ( id, text, created_at, parent_id, user_id, author:profiles!comments_user_id_fkey ( id, name, avatar_url ), comment_reactions ( id, emoji, user_id, user:profiles!comment_reactions_user_id_fkey ( id, name, avatar_url ) ) ),
+      comments ( id, text, created_at, parent_id, user_id, mentions, author:profiles!comments_user_id_fkey ( id, name, avatar_url ), comment_reactions ( id, emoji, user_id, user:profiles!comment_reactions_user_id_fkey ( id, name, avatar_url ) ) ),
       reactions ( id, emoji, user_id, user:profiles!reactions_user_id_fkey ( id, name, avatar_url ) )
     `)
     .order('pinned', { ascending: false })
@@ -67,7 +67,7 @@ export async function getPostsWithDetails() {
   return data;
 }
 
-export async function createPost(userId, text, imageFile, privacy = 'public', tags = []) {
+export async function createPost(userId, text, imageFile, privacy = 'public', tags = [], mentions = []) {
   let image_url = null;
 
   if (imageFile) {
@@ -87,7 +87,7 @@ export async function createPost(userId, text, imageFile, privacy = 'public', ta
 
   const { data, error } = await supabase
     .from('posts')
-    .insert({ user_id: userId, text, image_url, privacy, tags })
+    .insert({ user_id: userId, text, image_url, privacy, tags, mentions })
     .select()
     .single();
 
@@ -120,10 +120,10 @@ export async function updatePost(postId, updates) {
 // ============================================================
 // COMMENTS
 // ============================================================
-export async function createComment(postId, userId, text, parentId = null) {
+export async function createComment(postId, userId, text, parentId = null, mentions = []) {
   const { data, error } = await supabase
     .from('comments')
-    .insert({ post_id: postId, user_id: userId, text, parent_id: parentId })
+    .insert({ post_id: postId, user_id: userId, text, parent_id: parentId, mentions })
     .select()
     .single();
   if (error) console.error('❌ createComment error:', error.message);
