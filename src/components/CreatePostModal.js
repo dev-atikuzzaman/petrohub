@@ -4,8 +4,10 @@ import Avatar from './Avatar';
 import { XIcon, ImageIcon, LoaderIcon, LockIcon, GlobeIcon, CheckIcon } from './Icons';
 import { createPost } from '../lib/dataService';
 import { compressPostImage } from '../lib/imageCompress';
+import { detectMentionTrigger, insertMention } from '../lib/mentions';
+import MentionSuggestions from './MentionSuggestions';
 
-export default function CreatePostModal({ currentUser, onClose, onCreated }) {
+export default function CreatePostModal({ currentUser, members = [], onClose, onCreated }) {
   const [text, setText] = useState('');
   const [imageFile, setImageFile] = useState(null);
   const [imagePreview, setImagePreview] = useState(null);
@@ -13,6 +15,9 @@ export default function CreatePostModal({ currentUser, onClose, onCreated }) {
   const [compressing, setCompressing] = useState(false);
   const [privacy, setPrivacy] = useState('public');
   const [showPrivacyMenu, setShowPrivacyMenu] = useState(false);
+  const [mentionedUsers, setMentionedUsers] = useState([]); // {id, name} যাদের @মেনশন করা হয়েছে
+  const [mentionQuery, setMentionQuery] = useState(null); // null মানে এখন @ টাইপ হচ্ছে না
+  const textareaRef = useRef(null);
   const [tags, setTags] = useState([]);
   const [tagInput, setTagInput] = useState('');
   const privacyRef = useRef(null);
@@ -73,13 +78,38 @@ export default function CreatePostModal({ currentUser, onClose, onCreated }) {
   async function handlePost() {
     if (!text.trim() && !imageFile) return;
     setPosting(true);
-    const { error } = await createPost(currentUser.id, text.trim(), imageFile, privacy, tags);
+    const mentionIds = mentionedUsers.filter((u) => text.includes(`@${u.name}`)).map((u) => u.id);
+    const { error } = await createPost(currentUser.id, text.trim(), imageFile, privacy, tags, mentionIds);
     setPosting(false);
     if (!error) {
       onCreated && onCreated();
       onClose();
     }
   }
+
+  function handleTextChange(e) {
+    const val = e.target.value;
+    setText(val);
+    const cursorPos = e.target.selectionStart;
+    const trigger = detectMentionTrigger(val, cursorPos);
+    setMentionQuery(trigger);
+  }
+
+  function handleSelectMention(member) {
+    const cursorPos = textareaRef.current?.selectionStart ?? text.length;
+    const { text: newText, cursorPos: newCursorPos } = insertMention(text, mentionQuery.triggerIndex, cursorPos, member);
+    setText(newText);
+    setMentionedUsers((prev) => (prev.some((u) => u.id === member.id) ? prev : [...prev, member]));
+    setMentionQuery(null);
+    setTimeout(() => {
+      textareaRef.current?.focus();
+      textareaRef.current?.setSelectionRange(newCursorPos, newCursorPos);
+    }, 0);
+  }
+
+  const mentionMatches = mentionQuery
+    ? members.filter((m) => m.id !== currentUser.id && m.name?.toLowerCase().includes(mentionQuery.query.toLowerCase())).slice(0, 6)
+    : [];
 
   return (
     <div
@@ -150,9 +180,10 @@ export default function CreatePostModal({ currentUser, onClose, onCreated }) {
         </div>
 
         <textarea
+          ref={textareaRef}
           value={text}
-          onChange={(e) => setText(e.target.value)}
-          placeholder="কী জানাতে চান সবাইকে?"
+          onChange={handleTextChange}
+          placeholder="কী জানাতে চান সবাইকে? (@ লিখে কাউকে মেনশন করুন)"
           rows={4}
           style={{
             width: '100%', border: `1.5px solid var(--border)`, borderRadius: 14, padding: 12,
@@ -160,6 +191,8 @@ export default function CreatePostModal({ currentUser, onClose, onCreated }) {
             background: 'var(--bg-surface-alt)', color: 'var(--text-primary)',
           }}
         />
+
+        {mentionQuery && <MentionSuggestions matches={mentionMatches} onSelect={handleSelectMention} />}
 
         <div style={{
           display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: 6, marginTop: 10, padding: '6px 10px',
