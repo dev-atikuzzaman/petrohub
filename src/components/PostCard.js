@@ -3,6 +3,8 @@ import React, { useState, useEffect, useRef } from 'react';
 import Avatar from './Avatar';
 import { HeartIcon, CommentIcon, SendIcon, TrashIcon, MoreIcon, EditIcon, LockIcon, GlobeIcon, CheckIcon, LoaderIcon, XIcon, BookmarkIcon } from './Icons';
 import { toggleReaction, toggleCommentReaction, createComment, deletePost, deleteComment, updatePost, togglePinPost } from '../lib/dataService';
+import { detectMentionTrigger, insertMention, renderTextWithMentions } from '../lib/mentions';
+import MentionSuggestions from './MentionSuggestions';
 
 const EMOJIS = ['👍', '❤️', '😂', '😮', '😢', '🔥'];
 
@@ -58,7 +60,7 @@ function useLongPress(onLongPress, onQuickTap, delay = 400) {
   };
 }
 
-export default function PostCard({ post, currentUser, onUpdate, onOpenProfile, onFilterTag, isSaved, onToggleSave, isAdmin }) {
+export default function PostCard({ post, currentUser, onUpdate, onOpenProfile, onFilterTag, isSaved, onToggleSave, isAdmin, members = [] }) {
   const [showEmojiPicker, setShowEmojiPicker] = useState(false);
   const [showComments, setShowComments] = useState(false);
   const [commentText, setCommentText] = useState('');
@@ -68,6 +70,9 @@ export default function PostCard({ post, currentUser, onUpdate, onOpenProfile, o
   const [isEditing, setIsEditing] = useState(false);
   const [editText, setEditText] = useState(post.text);
   const [savingEdit, setSavingEdit] = useState(false);
+  const [mentionedInComment, setMentionedInComment] = useState([]);
+  const [commentMentionQuery, setCommentMentionQuery] = useState(null);
+  const commentInputRef = useRef(null);
   const [showPrivacyMenu, setShowPrivacyMenu] = useState(false);
   const [updatingPrivacy, setUpdatingPrivacy] = useState(false);
   const [showReactors, setShowReactors] = useState(false);
@@ -122,12 +127,37 @@ export default function PostCard({ post, currentUser, onUpdate, onOpenProfile, o
   async function handleSubmitComment() {
     if (!commentText.trim()) return;
     setSubmitting(true);
-    await createComment(post.id, currentUser.id, commentText.trim(), replyTo);
+    const mentionIds = mentionedInComment.filter((u) => commentText.includes(`@${u.name}`)).map((u) => u.id);
+    await createComment(post.id, currentUser.id, commentText.trim(), replyTo, mentionIds);
     setCommentText('');
+    setMentionedInComment([]);
     setReplyTo(null);
     setSubmitting(false);
     onUpdate && onUpdate();
   }
+
+  function handleCommentTextChange(e) {
+    const val = e.target.value;
+    setCommentText(val);
+    const cursorPos = e.target.selectionStart;
+    setCommentMentionQuery(detectMentionTrigger(val, cursorPos));
+  }
+
+  function handleSelectCommentMention(member) {
+    const cursorPos = commentInputRef.current?.selectionStart ?? commentText.length;
+    const { text: newText, cursorPos: newCursorPos } = insertMention(commentText, commentMentionQuery.triggerIndex, cursorPos, member);
+    setCommentText(newText);
+    setMentionedInComment((prev) => (prev.some((u) => u.id === member.id) ? prev : [...prev, member]));
+    setCommentMentionQuery(null);
+    setTimeout(() => {
+      commentInputRef.current?.focus();
+      commentInputRef.current?.setSelectionRange(newCursorPos, newCursorPos);
+    }, 0);
+  }
+
+  const commentMentionMatches = commentMentionQuery
+    ? members.filter((m) => m.id !== currentUser.id && m.name?.toLowerCase().includes(commentMentionQuery.query.toLowerCase())).slice(0, 6)
+    : [];
 
   async function handleDeletePost() {
     if (!window.confirm('পোস্টটি মুছে ফেলতে চান?')) return;
@@ -338,7 +368,7 @@ export default function PostCard({ post, currentUser, onUpdate, onOpenProfile, o
         </div>
       ) : (
         <p style={{ fontSize: 14.5, color: 'var(--text-primary)', lineHeight: 1.6, marginTop: 12, whiteSpace: 'pre-wrap' }}>
-          {post.text}
+          {renderTextWithMentions(post.text, members.filter((m) => post.mentions?.includes(m.id)))}
         </p>
       )}
 
@@ -449,6 +479,7 @@ export default function PostCard({ post, currentUser, onUpdate, onOpenProfile, o
                 onDelete={() => handleDeleteComment(c.id)}
                 onOpenProfile={onOpenProfile}
                 onUpdate={onUpdate}
+                members={members}
               />
               {repliesFor(c.id).map((r) => (
                 <div key={r.id} style={{ marginLeft: 36, marginTop: 8 }}>
@@ -458,6 +489,7 @@ export default function PostCard({ post, currentUser, onUpdate, onOpenProfile, o
                     onDelete={() => handleDeleteComment(r.id)}
                     onOpenProfile={onOpenProfile}
                     onUpdate={onUpdate}
+                    members={members}
                   />
                 </div>
               ))}
@@ -474,16 +506,22 @@ export default function PostCard({ post, currentUser, onUpdate, onOpenProfile, o
                 </div>
               )}
               <input
+                ref={commentInputRef}
                 value={commentText}
-                onChange={(e) => setCommentText(e.target.value)}
+                onChange={handleCommentTextChange}
                 onKeyDown={(e) => e.key === 'Enter' && handleSubmitComment()}
-                placeholder="মন্তব্য লিখুন..."
+                placeholder="মন্তব্য লিখুন... (@ দিয়ে মেনশন করুন)"
                 style={{
                   width: '100%', padding: '9px 36px 9px 12px', borderRadius: 20, border: `1.5px solid var(--border)`,
                   fontSize: 13, outline: 'none', boxSizing: 'border-box',
                   background: 'var(--bg-surface-alt)', color: 'var(--text-primary)',
                 }}
               />
+              {commentMentionQuery && (
+                <div style={{ position: 'absolute', top: '100%', left: 0, right: 0, zIndex: 20 }}>
+                  <MentionSuggestions matches={commentMentionMatches} onSelect={handleSelectCommentMention} />
+                </div>
+              )}
               <button
                 onClick={handleSubmitComment}
                 disabled={submitting || !commentText.trim()}
@@ -562,7 +600,7 @@ export default function PostCard({ post, currentUser, onUpdate, onOpenProfile, o
   );
 }
 
-function CommentRow({ comment, currentUser, onReply, onDelete, onOpenProfile, onUpdate }) {
+function CommentRow({ comment, currentUser, onReply, onDelete, onOpenProfile, onUpdate, members = [] }) {
   const isOwn = comment.user_id === currentUser.id;
   const [showEmojiPicker, setShowEmojiPicker] = useState(false);
   const [showReactors, setShowReactors] = useState(false);
@@ -603,7 +641,9 @@ function CommentRow({ comment, currentUser, onReply, onDelete, onOpenProfile, on
       <div style={{ flex: 1 }}>
         <div style={{ background: 'var(--bg-surface-alt)', borderRadius: 14, padding: '8px 12px', display: 'inline-block', maxWidth: '100%' }}>
           <div style={{ fontWeight: 700, fontSize: 12.5, color: 'var(--text-primary)' }}>{comment.author?.name}</div>
-          <div style={{ fontSize: 13, color: 'var(--text-primary)', marginTop: 1, wordBreak: 'break-word' }}>{comment.text}</div>
+          <div style={{ fontSize: 13, color: 'var(--text-primary)', marginTop: 1, wordBreak: 'break-word' }}>
+            {renderTextWithMentions(comment.text, members.filter((m) => comment.mentions?.includes(m.id)))}
+          </div>
         </div>
 
         {totalReactions > 0 && (
