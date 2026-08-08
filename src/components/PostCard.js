@@ -2,7 +2,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import Avatar from './Avatar';
 import { HeartIcon, CommentIcon, SendIcon, TrashIcon, MoreIcon, EditIcon, LockIcon, GlobeIcon, CheckIcon, LoaderIcon, XIcon, BookmarkIcon } from './Icons';
-import { toggleReaction, toggleCommentReaction, createComment, deletePost, deleteComment, updatePost, togglePinPost } from '../lib/dataService';
+import { toggleReaction, toggleCommentReaction, createComment, deletePost, deleteComment, updatePost, togglePinPost, updateComment } from '../lib/dataService';
 import { detectMentionTrigger, insertMention, renderTextWithMentions } from '../lib/mentions';
 import MentionSuggestions from './MentionSuggestions';
 
@@ -604,6 +604,11 @@ function CommentRow({ comment, currentUser, onReply, onDelete, onOpenProfile, on
   const isOwn = comment.user_id === currentUser.id;
   const [showEmojiPicker, setShowEmojiPicker] = useState(false);
   const [showReactors, setShowReactors] = useState(false);
+  const [isEditing, setIsEditing] = useState(false);
+  const [editText, setEditText] = useState(comment.text);
+  const [savingEdit, setSavingEdit] = useState(false);
+  const [editMentionQuery, setEditMentionQuery] = useState(null);
+  const editInputRef = useRef(null);
   const emojiRef = useRef(null);
 
   useEffect(() => {
@@ -630,6 +635,47 @@ function CommentRow({ comment, currentUser, onReply, onDelete, onOpenProfile, on
 
   const longPress = useLongPress(() => setShowEmojiPicker(true), quickTapReact);
 
+  function startEdit() {
+    setEditText(comment.text);
+    setIsEditing(true);
+  }
+
+  function cancelEdit() {
+    setIsEditing(false);
+    setEditText(comment.text);
+    setEditMentionQuery(null);
+  }
+
+  async function saveEdit() {
+    if (!editText.trim()) return;
+    setSavingEdit(true);
+    await updateComment(comment.id, editText.trim());
+    setSavingEdit(false);
+    setIsEditing(false);
+    onUpdate && onUpdate();
+  }
+
+  function handleEditTextChange(e) {
+    const val = e.target.value;
+    setEditText(val);
+    setEditMentionQuery(detectMentionTrigger(val, e.target.selectionStart));
+  }
+
+  function handleSelectEditMention(member) {
+    const cursorPos = editInputRef.current?.selectionStart ?? editText.length;
+    const { text: newText, cursorPos: newCursorPos } = insertMention(editText, editMentionQuery.triggerIndex, cursorPos, member);
+    setEditText(newText);
+    setEditMentionQuery(null);
+    setTimeout(() => {
+      editInputRef.current?.focus();
+      editInputRef.current?.setSelectionRange(newCursorPos, newCursorPos);
+    }, 0);
+  }
+
+  const editMentionMatches = editMentionQuery
+    ? members.filter((m) => m.id !== currentUser.id && m.name?.toLowerCase().includes(editMentionQuery.query.toLowerCase())).slice(0, 6)
+    : [];
+
   return (
     <div style={{ display: 'flex', gap: 8 }}>
       <Avatar
@@ -639,14 +685,49 @@ function CommentRow({ comment, currentUser, onReply, onDelete, onOpenProfile, on
         onClick={() => onOpenProfile && onOpenProfile(comment.author)}
       />
       <div style={{ flex: 1 }}>
-        <div style={{ background: 'var(--bg-surface-alt)', borderRadius: 14, padding: '8px 12px', display: 'inline-block', maxWidth: '100%' }}>
-          <div style={{ fontWeight: 700, fontSize: 12.5, color: 'var(--text-primary)' }}>{comment.author?.name}</div>
-          <div style={{ fontSize: 13, color: 'var(--text-primary)', marginTop: 1, wordBreak: 'break-word' }}>
-            {renderTextWithMentions(comment.text, members.filter((m) => comment.mentions?.includes(m.id)))}
+        {isEditing ? (
+          <div style={{ position: 'relative' }}>
+            <textarea
+              ref={editInputRef}
+              value={editText}
+              onChange={handleEditTextChange}
+              onKeyDown={(e) => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); saveEdit(); } if (e.key === 'Escape') cancelEdit(); }}
+              autoFocus
+              rows={2}
+              style={{
+                width: '100%', boxSizing: 'border-box', border: '1.5px solid var(--accent)', borderRadius: 14, padding: '8px 12px',
+                fontSize: 13, outline: 'none', resize: 'none', fontFamily: 'inherit',
+                background: 'var(--bg-surface)', color: 'var(--text-primary)',
+              }}
+            />
+            {editMentionQuery && <MentionSuggestions matches={editMentionMatches} onSelect={handleSelectEditMention} />}
+            <div style={{ display: 'flex', gap: 8, marginTop: 5 }}>
+              <button
+                onClick={saveEdit}
+                disabled={savingEdit || !editText.trim()}
+                style={{ padding: '4px 12px', borderRadius: 10, border: 'none', background: 'var(--accent-gradient)', color: '#fff', fontSize: 11.5, fontWeight: 700, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 4 }}
+              >
+                {savingEdit ? <LoaderIcon width={11} height={11} /> : 'সংরক্ষণ'}
+              </button>
+              <button
+                onClick={cancelEdit}
+                style={{ padding: '4px 12px', borderRadius: 10, border: '1.5px solid var(--border)', background: 'none', color: 'var(--text-secondary)', fontSize: 11.5, fontWeight: 700, cursor: 'pointer' }}
+              >
+                বাতিল
+              </button>
+            </div>
           </div>
-        </div>
+        ) : (
+          <div style={{ background: 'var(--bg-surface-alt)', borderRadius: 14, padding: '8px 12px', display: 'inline-block', maxWidth: '100%' }}>
+            <div style={{ fontWeight: 700, fontSize: 12.5, color: 'var(--text-primary)' }}>{comment.author?.name}</div>
+            <div style={{ fontSize: 13, color: 'var(--text-primary)', marginTop: 1, wordBreak: 'break-word' }}>
+              {renderTextWithMentions(comment.text, members.filter((m) => comment.mentions?.includes(m.id)))}
+              {comment.edited_at && <span style={{ fontSize: 10.5, color: 'var(--text-muted)', marginLeft: 5 }}>(সম্পাদিত)</span>}
+            </div>
+          </div>
+        )}
 
-        {totalReactions > 0 && (
+        {!isEditing && totalReactions > 0 && (
           <div
             onClick={() => setShowReactors(true)}
             style={{ display: 'flex', gap: 3, marginTop: 3, marginLeft: 4, fontSize: 11.5, color: 'var(--text-secondary)', cursor: 'pointer', width: 'fit-content' }}
@@ -657,6 +738,7 @@ function CommentRow({ comment, currentUser, onReply, onDelete, onOpenProfile, on
           </div>
         )}
 
+        {!isEditing && (
         <div ref={emojiRef} style={{ display: 'flex', gap: 12, marginTop: 4, paddingLeft: 4, position: 'relative', alignItems: 'center' }}>
           <span style={{ fontSize: 11, color: 'var(--text-muted)' }}>{timeAgo(comment.created_at)}</span>
           <span
@@ -671,6 +753,11 @@ function CommentRow({ comment, currentUser, onReply, onDelete, onOpenProfile, on
           {onReply && (
             <span onClick={onReply} style={{ fontSize: 11, color: 'var(--accent)', fontWeight: 600, cursor: 'pointer' }}>
               রিপ্লাই
+            </span>
+          )}
+          {isOwn && (
+            <span onClick={startEdit} style={{ fontSize: 11, color: 'var(--accent)', fontWeight: 600, cursor: 'pointer' }}>
+              এডিট
             </span>
           )}
           {isOwn && (
@@ -698,6 +785,7 @@ function CommentRow({ comment, currentUser, onReply, onDelete, onOpenProfile, on
             </div>
           )}
         </div>
+        )}
       </div>
 
       {showReactors && (
