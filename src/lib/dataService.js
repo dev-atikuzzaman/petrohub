@@ -54,7 +54,7 @@ export async function getPostsWithDetails() {
     .select(`
       *,
       author:profiles!posts_user_id_fkey ( id, name, avatar_url, designation, company, current_company ),
-      comments ( id, text, created_at, parent_id, user_id, mentions, author:profiles!comments_user_id_fkey ( id, name, avatar_url ), comment_reactions ( id, emoji, user_id, user:profiles!comment_reactions_user_id_fkey ( id, name, avatar_url ) ) ),
+      comments ( id, text, created_at, edited_at, parent_id, user_id, mentions, author:profiles!comments_user_id_fkey ( id, name, avatar_url ), comment_reactions ( id, emoji, user_id, user:profiles!comment_reactions_user_id_fkey ( id, name, avatar_url ) ) ),
       reactions ( id, emoji, user_id, user:profiles!reactions_user_id_fkey ( id, name, avatar_url ) )
     `)
     .order('pinned', { ascending: false })
@@ -127,6 +127,17 @@ export async function createComment(postId, userId, text, parentId = null, menti
     .select()
     .single();
   if (error) console.error('❌ createComment error:', error.message);
+  return { data, error };
+}
+
+export async function updateComment(commentId, text) {
+  const { data, error } = await supabase
+    .from('comments')
+    .update({ text, edited_at: new Date().toISOString() })
+    .eq('id', commentId)
+    .select()
+    .single();
+  if (error) console.error('❌ updateComment error:', error.message);
   return { data, error };
 }
 
