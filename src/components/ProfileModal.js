@@ -2,6 +2,7 @@
 import React, { useState } from 'react';
 import Avatar from './Avatar';
 import Badge from './Badge';
+import MemberBadges from './MemberBadges';
 import {
   XIcon, MailIcon, PhoneIcon, MapPinIcon, BuildingIcon, GraduationIcon,
   EditIcon, CheckIcon, LoaderIcon, LockIcon, EyeIcon, EyeOffIcon, TagIcon, PlusIcon, TrashIcon,
@@ -27,7 +28,7 @@ function newFieldId() {
   return `field_${Date.now()}_${Math.random().toString(36).slice(2, 7)}`;
 }
 
-export default function ProfileModal({ profile, isOwnProfile, onClose, onUpdated, initialEditing = false }) {
+export default function ProfileModal({ profile, isOwnProfile, onClose, onUpdated, initialEditing = false, memberBadges = [] }) {
   const { updatePassword } = useAuth();
   const [editing, setEditing] = useState(initialEditing);
   const [form, setForm] = useState({ ...profile, custom_fields: { ...(profile.custom_fields || {}) } });
@@ -234,6 +235,12 @@ export default function ProfileModal({ profile, isOwnProfile, onClose, onUpdated
             {profile.is_admin && <Badge tone="admin">Admin</Badge>}
             <Badge tone={profile.status === 'Resigned' ? 'danger' : 'success'}>{profile.status === 'Resigned' ? 'Resigned' : 'Active সদস্য'}</Badge>
           </div>
+
+          {memberBadges.length > 0 && (
+            <div style={{ display: 'flex', justifyContent: 'center', marginTop: 10 }}>
+              <MemberBadges awardedBadges={memberBadges} />
+            </div>
+          )}
 
           {profile.email && (
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6, marginTop: 10, color: 'var(--text-secondary)', fontSize: 13 }}>

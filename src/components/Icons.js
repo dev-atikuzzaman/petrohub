@@ -42,3 +42,7 @@ export const VideoIcon = (p) => <svg {...base} {...p}><polygon points="23 7 16 1
 export const CalendarIcon = (p) => <svg {...base} {...p}><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>;
 export const ClockIcon = (p) => <svg {...base} {...p}><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>;
 export const BookmarkIcon = (p) => <svg {...base} {...p}><path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"/></svg>;
+export const TrophyIcon = (p) => <svg {...base} {...p}><path d="M8 21h8"/><path d="M12 17v4"/><path d="M7 4h10v5a5 5 0 0 1-10 0z"/><path d="M7 5H4a2 2 0 0 0 0 4h.5"/><path d="M17 5h3a2 2 0 0 1 0 4h-.5"/></svg>;
+export const MedalIcon = (p) => <svg {...base} {...p}><circle cx="12" cy="15" r="6"/><path d="M12 12v6M9 15h6"/><path d="M8.5 9.5 6 3h3l3 6.5M15.5 9.5 18 3h-3l-3 6.5"/></svg>;
+export const PollIcon = (p) => <svg {...base} {...p}><rect x="3" y="12" width="4" height="9" rx="1"/><rect x="10" y="7" width="4" height="14" rx="1"/><rect x="17" y="3" width="4" height="18" rx="1"/></svg>;
+export const AwardIcon = (p) => <svg {...base} {...p}><circle cx="12" cy="8" r="6"/><path d="M8.21 13.89 7 23l5-3 5 3-1.21-9.12"/></svg>;
