@@ -1,8 +1,10 @@
 // src/pages/FeedTab.js
 import React, { useMemo, useState, useEffect } from 'react';
 import PostCard from '../components/PostCard';
-import { PlusIcon, WhatsAppIcon, BookmarkIcon } from '../components/Icons';
+import PollCard from '../components/PollCard';
+import { PlusIcon, WhatsAppIcon, BookmarkIcon, PollIcon } from '../components/Icons';
 import CreatePostModal from '../components/CreatePostModal';
+import CreatePollModal from '../components/CreatePollModal';
 import { getSavedPostIds, toggleSavePost } from '../lib/dataService';
 
 function computeTopTags(posts, limit = 10) {
@@ -19,8 +21,9 @@ function computeTopTags(posts, limit = 10) {
     .slice(0, limit);
 }
 
-export default function FeedTab({ posts, currentUser, onUpdate, onOpenProfile, isAdmin, members = [] }) {
+export default function FeedTab({ posts, polls = [], currentUser, onUpdate, onOpenProfile, isAdmin, members = [] }) {
   const [showCreate, setShowCreate] = useState(false);
+  const [showCreatePoll, setShowCreatePoll] = useState(false);
   const [activeTag, setActiveTag] = useState(null);
   const [showSavedOnly, setShowSavedOnly] = useState(false);
   const [savedIds, setSavedIds] = useState(new Set());
@@ -58,6 +61,20 @@ export default function FeedTab({ posts, currentUser, onUpdate, onOpenProfile, i
     visiblePosts = visiblePosts.filter((p) => savedIds.has(p.id));
   }
 
+  // পোল শুধু তখনই ফিডে মেশানো হয় যখন কোনো ট্যাগ/সেভ ফিল্টার সক্রিয় নেই
+  // (পোল ট্যাগ করা বা সেভ করা যায় না)
+  const showPolls = !activeTag && !showSavedOnly;
+  const feedItems = useMemo(() => {
+    const pinnedPosts = visiblePosts.filter((p) => p.pinned).map((p) => ({ type: 'post', data: p }));
+    const rest = visiblePosts.filter((p) => !p.pinned).map((p) => ({ type: 'post', data: p }));
+    const pollItems = showPolls ? polls.map((p) => ({ type: 'poll', data: p })) : [];
+    const merged = [...rest, ...pollItems].sort(
+      (a, b) => new Date(b.data.created_at) - new Date(a.data.created_at)
+    );
+    return [...pinnedPosts, ...merged];
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [visiblePosts, polls, showPolls]);
+
   return (
     <div style={{ maxWidth: 600, margin: '0 auto', padding: '16px 14px 90px' }}>
       <div style={{ display: 'flex', gap: 10, marginBottom: 16 }}>
@@ -71,6 +88,17 @@ export default function FeedTab({ posts, currentUser, onUpdate, onOpenProfile, i
           }}
         >
           <PlusIcon width={18} height={18} /> নতুন পোস্ট
+        </button>
+        <button
+          onClick={() => setShowCreatePoll(true)}
+          title="নতুন পোল / জরিপ"
+          style={{
+            display: 'flex', alignItems: 'center', justifyContent: 'center', width: 48, flexShrink: 0,
+            padding: '13px', borderRadius: 14, border: 'none',
+            background: 'var(--bg-surface-alt)', color: 'var(--text-secondary)', cursor: 'pointer',
+          }}
+        >
+          <PollIcon width={18} height={18} />
         </button>
         {whatsappLink && (
           <a
@@ -129,7 +157,7 @@ export default function FeedTab({ posts, currentUser, onUpdate, onOpenProfile, i
         </div>
       )}
 
-      {visiblePosts.length === 0 ? (
+      {visiblePosts.length === 0 && (!showPolls || polls.length === 0) ? (
         <div style={{ textAlign: 'center', padding: '60px 20px', color: 'var(--text-muted)' }}>
           <div style={{ fontSize: 40, marginBottom: 10 }}>📭</div>
           <div style={{ fontSize: 14 }}>
@@ -137,20 +165,31 @@ export default function FeedTab({ posts, currentUser, onUpdate, onOpenProfile, i
           </div>
         </div>
       ) : (
-        visiblePosts.map((post) => (
-          <PostCard
-            key={post.id}
-            post={post}
-            currentUser={currentUser}
-            onUpdate={onUpdate}
-            onOpenProfile={onOpenProfile}
-            onFilterTag={setActiveTag}
-            isSaved={savedIds.has(post.id)}
-            onToggleSave={handleToggleSave}
-            isAdmin={isAdmin}
-            members={members}
-          />
-        ))
+        feedItems.map((item) =>
+          item.type === 'poll' ? (
+            <PollCard
+              key={`poll-${item.data.id}`}
+              poll={item.data}
+              currentUser={currentUser}
+              onUpdate={onUpdate}
+              onOpenProfile={onOpenProfile}
+              isAdmin={isAdmin}
+            />
+          ) : (
+            <PostCard
+              key={item.data.id}
+              post={item.data}
+              currentUser={currentUser}
+              onUpdate={onUpdate}
+              onOpenProfile={onOpenProfile}
+              onFilterTag={setActiveTag}
+              isSaved={savedIds.has(item.data.id)}
+              onToggleSave={handleToggleSave}
+              isAdmin={isAdmin}
+              members={members}
+            />
+          )
+        )
       )}
 
       {showCreate && (
@@ -158,6 +197,14 @@ export default function FeedTab({ posts, currentUser, onUpdate, onOpenProfile, i
           currentUser={currentUser}
           members={members}
           onClose={() => setShowCreate(false)}
+          onCreated={onUpdate}
+        />
+      )}
+
+      {showCreatePoll && (
+        <CreatePollModal
+          currentUser={currentUser}
+          onClose={() => setShowCreatePoll(false)}
           onCreated={onUpdate}
         />
       )}
