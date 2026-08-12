@@ -241,6 +241,7 @@ export function subscribeToAppChanges(onChange) {
     .on('postgres_changes', { event: '*', schema: 'public', table: 'polls' }, wrappedOnChange)
     .on('postgres_changes', { event: '*', schema: 'public', table: 'poll_options' }, wrappedOnChange)
     .on('postgres_changes', { event: '*', schema: 'public', table: 'poll_votes' }, wrappedOnChange)
+    .on('postgres_changes', { event: '*', schema: 'public', table: 'job_postings' }, wrappedOnChange)
     .subscribe((status) => {
       if (status === 'SUBSCRIBED') {
         console.log('✅ Realtime channel connected (posts + profiles)');
@@ -769,5 +770,48 @@ export async function retractVote(pollId, userId) {
 export async function deletePoll(pollId) {
   const { error } = await supabase.from('polls').delete().eq('id', pollId);
   if (error) console.error('❌ deletePoll:', error.message);
+  return { error };
+}
+
+// ============================================================
+// ইন্টার্নাল জব / সুযোগ বোর্ড (Job Postings)
+// ============================================================
+export async function getJobPostings() {
+  const { data, error } = await supabase
+    .from('job_postings')
+    .select('*, poster:profiles!job_postings_posted_by_fkey ( id, name, avatar_url, designation, current_company )')
+    .order('created_at', { ascending: false });
+  if (error) { console.error('❌ getJobPostings:', error.message); return []; }
+  return data;
+}
+
+export async function createJobPosting(userId, { title, company, location, job_type, description, contact_info, deadline }) {
+  const { data, error } = await supabase
+    .from('job_postings')
+    .insert({
+      posted_by: userId, title, company, location,
+      job_type: job_type || 'full_time', description, contact_info,
+      deadline: deadline || null,
+    })
+    .select()
+    .single();
+  if (error) console.error('❌ createJobPosting:', error.message);
+  return { data, error };
+}
+
+export async function updateJobPosting(id, updates) {
+  const { data, error } = await supabase
+    .from('job_postings')
+    .update(updates)
+    .eq('id', id)
+    .select()
+    .single();
+  if (error) console.error('❌ updateJobPosting:', error.message);
+  return { data, error };
+}
+
+export async function deleteJobPosting(id) {
+  const { error } = await supabase.from('job_postings').delete().eq('id', id);
+  if (error) console.error('❌ deleteJobPosting:', error.message);
   return { error };
 }
