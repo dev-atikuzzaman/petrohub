@@ -236,6 +236,11 @@ export function subscribeToAppChanges(onChange) {
     .on('postgres_changes', { event: '*', schema: 'public', table: 'comment_reactions' }, wrappedOnChange)
     .on('postgres_changes', { event: '*', schema: 'public', table: 'meeting_rooms' }, wrappedOnChange)
     .on('postgres_changes', { event: '*', schema: 'public', table: 'profiles' }, wrappedOnChange)
+    .on('postgres_changes', { event: '*', schema: 'public', table: 'badges' }, wrappedOnChange)
+    .on('postgres_changes', { event: '*', schema: 'public', table: 'member_badges' }, wrappedOnChange)
+    .on('postgres_changes', { event: '*', schema: 'public', table: 'polls' }, wrappedOnChange)
+    .on('postgres_changes', { event: '*', schema: 'public', table: 'poll_options' }, wrappedOnChange)
+    .on('postgres_changes', { event: '*', schema: 'public', table: 'poll_votes' }, wrappedOnChange)
     .subscribe((status) => {
       if (status === 'SUBSCRIBED') {
         console.log('✅ Realtime channel connected (posts + profiles)');
@@ -648,5 +653,121 @@ export async function togglePinPost(postId, currentlyPinned) {
     .update({ pinned: !currentlyPinned })
     .eq('id', postId);
   if (error) console.error('❌ togglePinPost:', error.message);
+  return { error };
+}
+
+// ============================================================
+// ব্যাজ / স্বীকৃতি (Badges)
+// ============================================================
+export async function getBadges() {
+  const { data, error } = await supabase
+    .from('badges')
+    .select('*')
+    .order('created_at', { ascending: true });
+  if (error) { console.error('❌ getBadges:', error.message); return []; }
+  return data;
+}
+
+export async function createBadge(createdBy, { name, description, icon, color }) {
+  const { data, error } = await supabase
+    .from('badges')
+    .insert({ name, description, icon: icon || '🏅', color: color || '#f59e0b', created_by: createdBy })
+    .select()
+    .single();
+  if (error) console.error('❌ createBadge:', error.message);
+  return { data, error };
+}
+
+export async function deleteBadge(badgeId) {
+  const { error } = await supabase.from('badges').delete().eq('id', badgeId);
+  if (error) console.error('❌ deleteBadge:', error.message);
+  return { error };
+}
+
+export async function getMemberBadges() {
+  const { data, error } = await supabase
+    .from('member_badges')
+    .select('*, badge:badges(*), user:profiles!member_badges_user_id_fkey(id, name, avatar_url)')
+    .order('awarded_at', { ascending: false });
+  if (error) { console.error('❌ getMemberBadges:', error.message); return []; }
+  return data;
+}
+
+export async function awardBadge(badgeId, userId, awardedBy, note = '') {
+  const { data, error } = await supabase
+    .from('member_badges')
+    .insert({ badge_id: badgeId, user_id: userId, awarded_by: awardedBy, note })
+    .select()
+    .single();
+  if (error) console.error('❌ awardBadge:', error.message);
+  return { data, error };
+}
+
+export async function revokeBadge(memberBadgeId) {
+  const { error } = await supabase.from('member_badges').delete().eq('id', memberBadgeId);
+  if (error) console.error('❌ revokeBadge:', error.message);
+  return { error };
+}
+
+// ============================================================
+// পোল / জরিপ (Polls)
+// ============================================================
+export async function getPollsWithDetails() {
+  const { data, error } = await supabase
+    .from('polls')
+    .select(`
+      *,
+      author:profiles!polls_user_id_fkey ( id, name, avatar_url, designation, current_company ),
+      poll_options ( id, option_text, position, poll_votes ( id, user_id ) )
+    `)
+    .order('created_at', { ascending: false });
+  if (error) { console.error('❌ getPollsWithDetails:', error.message); return []; }
+  // অপশনগুলো position অনুযায়ী সাজানো
+  return (data || []).map((p) => ({
+    ...p,
+    poll_options: [...(p.poll_options || [])].sort((a, b) => a.position - b.position),
+  }));
+}
+
+export async function createPoll(userId, question, options, closesAt = null) {
+  const { data: poll, error } = await supabase
+    .from('polls')
+    .insert({ user_id: userId, question, closes_at: closesAt })
+    .select()
+    .single();
+  if (error) { console.error('❌ createPoll:', error.message); return { error }; }
+
+  const optionRows = options
+    .map((text) => text.trim())
+    .filter(Boolean)
+    .map((text, i) => ({ poll_id: poll.id, option_text: text, position: i }));
+
+  const { error: optError } = await supabase.from('poll_options').insert(optionRows);
+  if (optError) console.error('❌ createPoll options:', optError.message);
+
+  return { data: poll, error: optError || null };
+}
+
+export async function votePoll(pollId, optionId, userId) {
+  // আগের ভোট থাকলে মুছে নতুন ভোট বসানো (single-choice পোল)
+  await supabase.from('poll_votes').delete().eq('poll_id', pollId).eq('user_id', userId);
+  const { data, error } = await supabase
+    .from('poll_votes')
+    .insert({ poll_id: pollId, option_id: optionId, user_id: userId })
+    .select()
+    .single();
+  if (error) console.error('❌ votePoll:', error.message);
+  return { data, error };
+}
+
+export async function retractVote(pollId, userId) {
+  const { error } = await supabase.from('poll_votes').delete().eq('poll_id', pollId).eq('user_id', userId);
+  if (error) console.error('❌ retractVote:', error.message);
+  return { error };
+}
+
+export async function deletePoll(pollId) {
+  const { error } = await supabase.from('polls').delete().eq('id', pollId);
+  if (error) console.error('❌ deletePoll:', error.message);
   return { error };
 }
