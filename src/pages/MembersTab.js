@@ -12,12 +12,19 @@ function uniqueValues(members, key) {
   return [...new Set(members.map((m) => m[key]).filter(Boolean))].sort();
 }
 
-const EXPORT_HEADERS = ['নাম', 'ইমেইল', 'ফোন', 'জেলা', 'বিশ্ববিদ্যালয়', 'বিষয়', 'বর্তমান প্রতিষ্ঠান', 'পদবী', 'বিভাগ', 'স্ট্যাটাস'];
+function uniqueSkills(members) {
+  const set = new Set();
+  members.forEach((m) => (m.skills || []).forEach((s) => set.add(s)));
+  return [...set].sort();
+}
+
+const EXPORT_HEADERS = ['নাম', 'ইমেইল', 'ফোন', 'জেলা', 'বিশ্ববিদ্যালয়', 'বিষয়', 'বর্তমান প্রতিষ্ঠান', 'পদবী', 'বিভাগ', 'স্কিল', 'স্ট্যাটাস'];
 
 function rowsFor(members) {
   return members.map((m) => [
     m.name || '', m.email || '', m.phone || '', m.district || '', m.university || '',
     m.subject || '', m.current_company || '', m.designation || '', m.department || '',
+    (m.skills || []).join(', '),
     m.status === 'Resigned' ? 'Resigned' : 'Active',
   ]);
 }
@@ -53,10 +60,11 @@ function exportPDF(members) {
 
   // PDF এ বাংলা ফন্ট সরাসরি না থাকায় headers ও data রোমান হরফে রাখা হলো
   // (jsPDF default font বাংলা ইউনিকোড render করতে পারে না)
-  const enHeaders = ['Name', 'Email', 'Phone', 'District', 'University', 'Subject', 'Company', 'Designation', 'Department', 'Status'];
+  const enHeaders = ['Name', 'Email', 'Phone', 'District', 'University', 'Subject', 'Company', 'Designation', 'Department', 'Skills', 'Status'];
   const rows = members.map((m) => [
     m.name || '', m.email || '', m.phone || '', m.district || '', m.university || '',
     m.subject || '', m.current_company || '', m.designation || '', m.department || '',
+    (m.skills || []).join(', '),
     m.status === 'Resigned' ? 'Resigned' : 'Active',
   ]);
 
@@ -78,6 +86,7 @@ export default function MembersTab({ members, onOpenProfile }) {
   const [companyFilter, setCompanyFilter] = useState([]);
   const [subjectFilter, setSubjectFilter] = useState([]);
   const [departmentFilter, setDepartmentFilter] = useState([]);
+  const [skillFilter, setSkillFilter] = useState([]);
   const [showExportMenu, setShowExportMenu] = useState(false);
   const exportRef = useRef(null);
 
@@ -94,19 +103,21 @@ export default function MembersTab({ members, onOpenProfile }) {
   const companies = useMemo(() => uniqueValues(members, 'current_company'), [members]);
   const subjects = useMemo(() => uniqueValues(members, 'subject'), [members]);
   const departments = useMemo(() => uniqueValues(members, 'department'), [members]);
+  const skills = useMemo(() => uniqueSkills(members), [members]);
 
   const filtered = useMemo(() => {
     return members.filter((m) => {
-      const matchesSearch = !search || [m.name, m.district, m.university, m.subject, m.current_company, m.department]
+      const matchesSearch = !search || [m.name, m.district, m.university, m.subject, m.current_company, m.department, ...(m.skills || [])]
         .some((v) => (v || '').toLowerCase().includes(search.toLowerCase()));
       const matchesDistrict = districtFilter.length === 0 || districtFilter.includes(m.district);
       const matchesUniversity = universityFilter.length === 0 || universityFilter.includes(m.university);
       const matchesCompany = companyFilter.length === 0 || companyFilter.includes(m.current_company);
       const matchesSubject = subjectFilter.length === 0 || subjectFilter.includes(m.subject);
       const matchesDepartment = departmentFilter.length === 0 || departmentFilter.includes(m.department);
-      return matchesSearch && matchesDistrict && matchesUniversity && matchesCompany && matchesSubject && matchesDepartment;
+      const matchesSkill = skillFilter.length === 0 || skillFilter.some((s) => (m.skills || []).includes(s));
+      return matchesSearch && matchesDistrict && matchesUniversity && matchesCompany && matchesSubject && matchesDepartment && matchesSkill;
     });
-  }, [members, search, districtFilter, universityFilter, companyFilter, subjectFilter, departmentFilter]);
+  }, [members, search, districtFilter, universityFilter, companyFilter, subjectFilter, departmentFilter, skillFilter]);
 
   function handleExport(type) {
     setShowExportMenu(false);
@@ -136,6 +147,7 @@ export default function MembersTab({ members, onOpenProfile }) {
         <MultiSelect label="বিষয়" options={subjects} selected={subjectFilter} onChange={setSubjectFilter} />
         <MultiSelect label="প্রতিষ্ঠান" options={companies} selected={companyFilter} onChange={setCompanyFilter} />
         <MultiSelect label="বিভাগ" options={departments} selected={departmentFilter} onChange={setDepartmentFilter} />
+        <MultiSelect label="স্কিল" options={skills} selected={skillFilter} onChange={setSkillFilter} />
 
         <div ref={exportRef} style={{ position: 'relative', marginLeft: 'auto' }}>
           <button
@@ -194,6 +206,18 @@ export default function MembersTab({ members, onOpenProfile }) {
             <div style={{ fontSize: 11.5, color: 'var(--text-secondary)', marginTop: 2 }}>{m.district || '—'}</div>
             {m.current_company && (
               <div style={{ fontSize: 10.5, color: 'var(--text-muted)', marginTop: 1 }}>{m.current_company}</div>
+            )}
+            {(m.skills || []).length > 0 && (
+              <div style={{ display: 'flex', flexWrap: 'wrap', gap: 4, justifyContent: 'center', marginTop: 6 }}>
+                {m.skills.slice(0, 3).map((s) => (
+                  <span key={s} style={{ fontSize: 9.5, fontWeight: 700, padding: '2px 7px', borderRadius: 20, background: 'var(--accent-soft)', color: 'var(--accent)' }}>
+                    {s}
+                  </span>
+                ))}
+                {m.skills.length > 3 && (
+                  <span style={{ fontSize: 9.5, fontWeight: 700, color: 'var(--text-muted)' }}>+{m.skills.length - 3}</span>
+                )}
+              </div>
             )}
             <div style={{ marginTop: 6 }}>
               <Badge tone={m.status === 'Resigned' ? 'danger' : 'success'}>
