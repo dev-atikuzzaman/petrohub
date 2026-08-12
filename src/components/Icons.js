@@ -46,3 +46,5 @@ export const TrophyIcon = (p) => <svg {...base} {...p}><path d="M8 21h8"/><path 
 export const MedalIcon = (p) => <svg {...base} {...p}><circle cx="12" cy="15" r="6"/><path d="M12 12v6M9 15h6"/><path d="M8.5 9.5 6 3h3l3 6.5M15.5 9.5 18 3h-3l-3 6.5"/></svg>;
 export const PollIcon = (p) => <svg {...base} {...p}><rect x="3" y="12" width="4" height="9" rx="1"/><rect x="10" y="7" width="4" height="14" rx="1"/><rect x="17" y="3" width="4" height="18" rx="1"/></svg>;
 export const AwardIcon = (p) => <svg {...base} {...p}><circle cx="12" cy="8" r="6"/><path d="M8.21 13.89 7 23l5-3 5 3-1.21-9.12"/></svg>;
+export const BriefcaseIcon = (p) => <svg {...base} {...p}><rect x="2" y="7" width="20" height="14" rx="2" ry="2"/><path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"/></svg>;
+export const SparkleIcon = (p) => <svg {...base} {...p}><path d="M12 3v4M12 17v4M3 12h4M17 12h4M5.6 5.6l2.8 2.8M15.6 15.6l2.8 2.8M5.6 18.4l2.8-2.8M15.6 8.4l2.8-2.8"/></svg>;

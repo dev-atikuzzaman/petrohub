@@ -36,6 +36,7 @@ export default function ProfileModal({ profile, isOwnProfile, onClose, onUpdated
   const [avatarFile, setAvatarFile] = useState(null);
   const [avatarPreview, setAvatarPreview] = useState(profile.avatar_url);
   const [compressing, setCompressing] = useState(false);
+  const [skillInput, setSkillInput] = useState('');
 
   // পাসওয়ার্ড পরিবর্তন সংক্রান্ত state
   const [showPasswordForm, setShowPasswordForm] = useState(false);
@@ -119,6 +120,30 @@ export default function ProfileModal({ profile, isOwnProfile, onClose, onUpdated
       delete cf[id];
       return { ...f, custom_fields: cf };
     });
+  }
+
+  // ---- স্কিল/এক্সপার্টিজ ট্যাগ হেল্পার ফাংশন ----
+  function addSkill() {
+    const clean = skillInput.trim().replace(/\s+/g, ' ').slice(0, 30);
+    if (!clean) return;
+    const existing = form.skills || [];
+    if (!existing.some((s) => s.toLowerCase() === clean.toLowerCase())) {
+      setForm((f) => ({ ...f, skills: [...(f.skills || []), clean] }));
+    }
+    setSkillInput('');
+  }
+
+  function removeSkill(skill) {
+    setForm((f) => ({ ...f, skills: (f.skills || []).filter((s) => s !== skill) }));
+  }
+
+  function handleSkillKeyDown(e) {
+    if (e.key === 'Enter' || e.key === ',') {
+      e.preventDefault();
+      addSkill();
+    } else if (e.key === 'Backspace' && !skillInput && (form.skills || []).length > 0) {
+      setForm((f) => ({ ...f, skills: f.skills.slice(0, -1) }));
+    }
   }
 
   async function handleSave() {
@@ -269,7 +294,58 @@ export default function ProfileModal({ profile, isOwnProfile, onClose, onUpdated
               </div>
             ))}
 
-            {/* Status (Active/Resigned) — যাদের চাকরি পরিবর্তন হয়েছে তাদের জন্য */}
+            {/* স্কিল/এক্সপার্টিজ ট্যাগ — "কে কী বিষয়ে ভালো জানেন" খুঁজে পেতে */}
+            <div style={{ display: 'flex', alignItems: 'flex-start', gap: 12, padding: '10px 0', borderBottom: '1px solid var(--border)' }}>
+              <div style={{ width: 32, height: 32, borderRadius: 9, background: 'var(--accent-soft)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                <TagIcon width={16} height={16} color="var(--accent)" />
+              </div>
+              <div style={{ flex: 1 }}>
+                <div style={{ fontSize: 11, color: 'var(--text-muted)', fontWeight: 600, textTransform: 'uppercase' }}>স্কিল / এক্সপার্টিজ</div>
+                {editing ? (
+                  <div style={{ marginTop: 5 }}>
+                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6, marginBottom: (form.skills || []).length ? 8 : 0 }}>
+                      {(form.skills || []).map((s) => (
+                        <span
+                          key={s}
+                          style={{
+                            display: 'inline-flex', alignItems: 'center', gap: 5, padding: '3px 9px', borderRadius: 20,
+                            background: 'var(--accent-soft)', color: 'var(--accent)', fontSize: 12, fontWeight: 700,
+                          }}
+                        >
+                          {s}
+                          <span onClick={() => removeSkill(s)} style={{ cursor: 'pointer', fontWeight: 800 }}>×</span>
+                        </span>
+                      ))}
+                    </div>
+                    <input
+                      value={skillInput}
+                      onChange={(e) => setSkillInput(e.target.value)}
+                      onKeyDown={handleSkillKeyDown}
+                      onBlur={addSkill}
+                      placeholder="স্কিল লিখে Enter চাপুন (যেমন: Python, Welding QA)"
+                      style={{ width: '100%', border: '1px solid var(--border)', borderRadius: 8, padding: '5px 8px', fontSize: 13.5, boxSizing: 'border-box', background: 'var(--bg-surface)', color: 'var(--text-primary)' }}
+                    />
+                  </div>
+                ) : (profile.skills || []).length > 0 ? (
+                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6, marginTop: 4 }}>
+                    {profile.skills.map((s) => (
+                      <span
+                        key={s}
+                        style={{
+                          display: 'inline-flex', padding: '3px 9px', borderRadius: 20,
+                          background: 'var(--accent-soft)', color: 'var(--accent)', fontSize: 12, fontWeight: 700,
+                        }}
+                      >
+                        {s}
+                      </span>
+                    ))}
+                  </div>
+                ) : (
+                  <div style={{ fontSize: 14, color: 'var(--text-primary)', fontWeight: 500, marginTop: 1 }}>—</div>
+                )}
+              </div>
+            </div>
+
             <div style={{ display: 'flex', alignItems: 'flex-start', gap: 12, padding: '10px 0', borderBottom: '1px solid var(--border)' }}>
               <div style={{ width: 32, height: 32, borderRadius: 9, background: 'var(--accent-soft)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
                 <BuildingIcon width={16} height={16} color="var(--accent)" />
