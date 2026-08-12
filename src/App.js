@@ -11,6 +11,7 @@ import FeedTab from './pages/FeedTab';
 import MembersTab from './pages/MembersTab';
 import StatsTab from './pages/StatsTab';
 import LeaderboardTab from './pages/LeaderboardTab';
+import JobBoardTab from './pages/JobBoardTab';
 import AdminPanel from './pages/AdminPanel';
 import NotesTab from './pages/NotesTab';
 import WebsitesTab from './pages/WebsitesTab';
@@ -20,8 +21,8 @@ import SettingsTab from './pages/SettingsTab';
 import MeetingTab from './pages/MeetingTab';
 import ThemeSwitcher from './components/ThemeSwitcher';
 import { ThemeProvider } from './lib/ThemeContext';
-import { getAllProfiles, getPostsWithDetails, subscribeToPosts, subscribeToProfiles, getBadges, getMemberBadges, getPollsWithDetails } from './lib/dataService';
-import { HomeIcon, UsersIcon, ChartIcon, LogOutIcon, ShieldIcon, WifiOffIcon, LoaderIcon, NoteIcon, BellIcon, FolderIcon, GlobeIcon, VideoIcon, SearchIcon, TrophyIcon } from './components/Icons';
+import { getAllProfiles, getPostsWithDetails, subscribeToPosts, subscribeToProfiles, getBadges, getMemberBadges, getPollsWithDetails, getJobPostings } from './lib/dataService';
+import { HomeIcon, UsersIcon, ChartIcon, LogOutIcon, ShieldIcon, WifiOffIcon, LoaderIcon, NoteIcon, BellIcon, FolderIcon, GlobeIcon, VideoIcon, SearchIcon, TrophyIcon, BriefcaseIcon } from './components/Icons';
 import GlobalSearchModal from './components/GlobalSearchModal';
 
 // SettingsIcon inline যোগ করা হলো
@@ -35,6 +36,7 @@ function AppShell() {
   const [badges, setBadges] = useState([]);
   const [memberBadges, setMemberBadges] = useState([]);
   const [polls, setPolls] = useState([]);
+  const [jobs, setJobs] = useState([]);
   const [dataLoading, setDataLoading] = useState(true);
   const [viewingProfile, setViewingProfile] = useState(null);
   const [showSearch, setShowSearch] = useState(false);
@@ -45,8 +47,8 @@ function AppShell() {
   const loadData = useCallback(async () => {
     try {
       console.log('🔄 loadData called');
-      const [profilesData, postsData, badgesData, memberBadgesData, pollsData] = await Promise.all([
-        getAllProfiles(), getPostsWithDetails(), getBadges(), getMemberBadges(), getPollsWithDetails(),
+      const [profilesData, postsData, badgesData, memberBadgesData, pollsData, jobsData] = await Promise.all([
+        getAllProfiles(), getPostsWithDetails(), getBadges(), getMemberBadges(), getPollsWithDetails(), getJobPostings(),
       ]);
       console.log('✅ loadData fetched:', postsData.length, 'posts,', profilesData.length, 'profiles');
       setMembers(profilesData);
@@ -54,6 +56,7 @@ function AppShell() {
       setBadges(badgesData);
       setMemberBadges(memberBadgesData);
       setPolls(pollsData);
+      setJobs(jobsData);
     } catch (err) {
       console.error('❌ loadData failed:', err);
     } finally {
@@ -153,6 +156,7 @@ function AppShell() {
     { key: 'feed', label: 'ফিড', icon: HomeIcon },
     { key: 'members', label: 'সদস্য', icon: UsersIcon },
     { key: 'leaderboard', label: 'স্বীকৃতি', icon: TrophyIcon },
+    { key: 'jobs', label: 'সুযোগ', icon: BriefcaseIcon },
     { key: 'updates', label: 'আপডেট', icon: BellIcon },
     { key: 'notes', label: 'নোট', icon: NoteIcon },
     { key: 'websites', label: 'ওয়েবসাইট', icon: GlobeIcon },
@@ -242,6 +246,8 @@ function AppShell() {
             onOpenProfile={(p) => p && setViewingProfile(members.find((m) => m.id === p.id) || p)}
             onUpdate={loadData}
           />
+        ) : tab === 'jobs' ? (
+          <JobBoardTab jobs={jobs} currentUser={profile} isAdmin={isAdmin} onOpenProfile={(p) => p && setViewingProfile(members.find((m) => m.id === p.id) || p)} onUpdate={loadData} />
         ) : tab === 'updates' ? (
           <ImportantUpdatesTab currentUser={profile} />
         ) : tab === 'notes' ? (
