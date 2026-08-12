@@ -10,6 +10,7 @@ import DateTimeBar from './components/DateTimeBar';
 import FeedTab from './pages/FeedTab';
 import MembersTab from './pages/MembersTab';
 import StatsTab from './pages/StatsTab';
+import LeaderboardTab from './pages/LeaderboardTab';
 import AdminPanel from './pages/AdminPanel';
 import NotesTab from './pages/NotesTab';
 import WebsitesTab from './pages/WebsitesTab';
@@ -19,8 +20,8 @@ import SettingsTab from './pages/SettingsTab';
 import MeetingTab from './pages/MeetingTab';
 import ThemeSwitcher from './components/ThemeSwitcher';
 import { ThemeProvider } from './lib/ThemeContext';
-import { getAllProfiles, getPostsWithDetails, subscribeToPosts, subscribeToProfiles } from './lib/dataService';
-import { HomeIcon, UsersIcon, ChartIcon, LogOutIcon, ShieldIcon, WifiOffIcon, LoaderIcon, NoteIcon, BellIcon, FolderIcon, GlobeIcon, VideoIcon, SearchIcon } from './components/Icons';
+import { getAllProfiles, getPostsWithDetails, subscribeToPosts, subscribeToProfiles, getBadges, getMemberBadges, getPollsWithDetails } from './lib/dataService';
+import { HomeIcon, UsersIcon, ChartIcon, LogOutIcon, ShieldIcon, WifiOffIcon, LoaderIcon, NoteIcon, BellIcon, FolderIcon, GlobeIcon, VideoIcon, SearchIcon, TrophyIcon } from './components/Icons';
 import GlobalSearchModal from './components/GlobalSearchModal';
 
 // SettingsIcon inline যোগ করা হলো
@@ -31,6 +32,9 @@ function AppShell() {
   const [tab, setTab] = useState('feed');
   const [members, setMembers] = useState([]);
   const [posts, setPosts] = useState([]);
+  const [badges, setBadges] = useState([]);
+  const [memberBadges, setMemberBadges] = useState([]);
+  const [polls, setPolls] = useState([]);
   const [dataLoading, setDataLoading] = useState(true);
   const [viewingProfile, setViewingProfile] = useState(null);
   const [showSearch, setShowSearch] = useState(false);
@@ -41,10 +45,15 @@ function AppShell() {
   const loadData = useCallback(async () => {
     try {
       console.log('🔄 loadData called');
-      const [profilesData, postsData] = await Promise.all([getAllProfiles(), getPostsWithDetails()]);
+      const [profilesData, postsData, badgesData, memberBadgesData, pollsData] = await Promise.all([
+        getAllProfiles(), getPostsWithDetails(), getBadges(), getMemberBadges(), getPollsWithDetails(),
+      ]);
       console.log('✅ loadData fetched:', postsData.length, 'posts,', profilesData.length, 'profiles');
       setMembers(profilesData);
       setPosts(postsData);
+      setBadges(badgesData);
+      setMemberBadges(memberBadgesData);
+      setPolls(pollsData);
     } catch (err) {
       console.error('❌ loadData failed:', err);
     } finally {
@@ -143,6 +152,7 @@ function AppShell() {
   const tabs = [
     { key: 'feed', label: 'ফিড', icon: HomeIcon },
     { key: 'members', label: 'সদস্য', icon: UsersIcon },
+    { key: 'leaderboard', label: 'স্বীকৃতি', icon: TrophyIcon },
     { key: 'updates', label: 'আপডেট', icon: BellIcon },
     { key: 'notes', label: 'নোট', icon: NoteIcon },
     { key: 'websites', label: 'ওয়েবসাইট', icon: GlobeIcon },
@@ -218,9 +228,20 @@ function AppShell() {
             <div style={{ color: 'var(--text-secondary)', fontSize: 13, marginTop: 10 }}>ডেটা লোড হচ্ছে...</div>
           </div>
         ) : tab === 'feed' ? (
-          <FeedTab posts={posts} currentUser={profile} onUpdate={loadData} onOpenProfile={(p) => p && setViewingProfile(members.find((m) => m.id === p.id) || p)} isAdmin={isAdmin} members={members} />
+          <FeedTab posts={posts} polls={polls} currentUser={profile} onUpdate={loadData} onOpenProfile={(p) => p && setViewingProfile(members.find((m) => m.id === p.id) || p)} isAdmin={isAdmin} members={members} />
         ) : tab === 'members' ? (
           <MembersTab members={members} onOpenProfile={setViewingProfile} />
+        ) : tab === 'leaderboard' ? (
+          <LeaderboardTab
+            members={members}
+            posts={posts}
+            badges={badges}
+            memberBadges={memberBadges}
+            currentUser={profile}
+            isAdmin={isAdmin}
+            onOpenProfile={(p) => p && setViewingProfile(members.find((m) => m.id === p.id) || p)}
+            onUpdate={loadData}
+          />
         ) : tab === 'updates' ? (
           <ImportantUpdatesTab currentUser={profile} />
         ) : tab === 'notes' ? (
@@ -269,6 +290,7 @@ function AppShell() {
           profile={members.find((m) => m.id === viewingProfile.id) || viewingProfile}
           isOwnProfile={viewingProfile.id === profile.id}
           initialEditing={profileEditIntent}
+          memberBadges={memberBadges.filter((mb) => mb.user_id === viewingProfile.id)}
           onClose={() => { setViewingProfile(null); setProfileEditIntent(false); }}
           onUpdated={() => { loadData(); }}
         />
