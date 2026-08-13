@@ -11,13 +11,74 @@ import { updateProfile, uploadAvatar } from '../lib/dataService';
 import { compressAvatar } from '../lib/imageCompress';
 import { useAuth } from '../lib/AuthContext';
 
+const DISTRICTS = [
+  // ঢাকা বিভাগ
+  'ঢাকা', 'গাজীপুর', 'নারায়ণগঞ্জ', 'নরসিংদী', 'মানিকগঞ্জ', 'মুন্সিগঞ্জ', 'টাঙ্গাইল', 'কিশোরগঞ্জ',
+  'ফরিদপুর', 'গোপালগঞ্জ', 'মাদারীপুর', 'রাজবাড়ী', 'শরীয়তপুর',
+  // চট্টগ্রাম বিভাগ
+  'চট্টগ্রাম', 'কক্সবাজার', 'রাঙামাটি', 'বান্দরবান', 'খাগড়াছড়ি', 'কুমিল্লা', 'ব্রাহ্মণবাড়িয়া',
+  'চাঁদপুর', 'লক্ষ্মীপুর', 'নোয়াখালী', 'ফেনী',
+  // রাজশাহী বিভাগ
+  'রাজশাহী', 'নাটোর', 'নওগাঁ', 'চাঁপাইনবাবগঞ্জ', 'পাবনা', 'সিরাজগঞ্জ', 'বগুড়া', 'জয়পুরহাট',
+  // খুলনা বিভাগ
+  'খুলনা', 'বাগেরহাট', 'সাতক্ষীরা', 'যশোর', 'ঝিনাইদহ', 'মাগুরা', 'নড়াইল', 'কুষ্টিয়া',
+  'চুয়াডাঙ্গা', 'মেহেরপুর',
+  // বরিশাল বিভাগ
+  'বরিশাল', 'পটুয়াখালী', 'ভোলা', 'পিরোজপুর', 'ঝালকাঠি', 'বরগুনা',
+  // সিলেট বিভাগ
+  'সিলেট', 'মৌলভীবাজার', 'হবিগঞ্জ', 'সুনামগঞ্জ',
+  // রংপুর বিভাগ
+  'রংপুর', 'দিনাজপুর', 'গাইবান্ধা', 'কুড়িগ্রাম', 'লালমনিরহাট', 'নীলফামারী', 'পঞ্চগড়', 'ঠাকুরগাঁও',
+  // ময়মনসিংহ বিভাগ
+  'ময়মনসিংহ', 'জামালপুর', 'নেত্রকোণা', 'শেরপুর',
+];
+
+const ORGANIZATIONS = [
+  'Petro Bangla',
+  'BAPEX',
+  'SGFL',
+  'BGFCL',
+  'TGTDCL',
+  'BGDCL',
+  'KGDCL',
+  'PGCL',
+  'SGCL',
+  'JGTDSL',
+  'RPGCL',
+  'BCMCL',
+  'MGMCL',
+  'EMRD',
+  'MPEMR',
+  'BERC',
+  'BEPRC'
+];
+
+const DESIGNATIONS = [
+  'Assistant Technical Officer',
+  'Sub Assistant Engineer',
+  'Assistant Engineer',
+  'Assistant Manager',
+  'Deputy Manager',
+  'Manager',
+  'Deputy General Manager',
+  'General Manager',
+  'Managing Director',
+  'Member-Board of Directors',
+  'Chairman-Board of Directors',
+  'Senior Technician',
+  'Technician',
+  'Office Assistant',
+  'Driver',
+  'Laborer'
+];
+
 const FIELDS = [
   { key: 'phone', label: 'ফোন', icon: PhoneIcon },
-  { key: 'district', label: 'জেলা', icon: MapPinIcon },
+  { key: 'district', label: 'জেলা', icon: MapPinIcon, type: 'select', options: DISTRICTS },
   { key: 'university', label: 'বিশ্ববিদ্যালয়', icon: GraduationIcon },
   { key: 'subject', label: 'বিষয়', icon: GraduationIcon },
-  { key: 'current_company', label: 'বর্তমান প্রতিষ্ঠান', icon: BuildingIcon },
-  { key: 'designation', label: 'পদবী', icon: BuildingIcon },
+  { key: 'current_company', label: 'বর্তমান প্রতিষ্ঠান', icon: BuildingIcon, type: 'select', options: ORGANIZATIONS },
+  { key: 'designation', label: 'পদবী', icon: BuildingIcon, type: 'select', options: DESIGNATIONS },
   { key: 'department', label: 'বিভাগ', icon: BuildingIcon },
   { key: 'address', label: 'বর্তমান ঠিকানা', icon: MapPinIcon },
 ];
@@ -273,7 +334,9 @@ export default function ProfileModal({ profile, isOwnProfile, onClose, onUpdated
           )}
 
           <div style={{ marginTop: 20, textAlign: 'left' }}>
-            {FIELDS.map(({ key, label, icon: Icon }) => (
+            {FIELDS.map((field) => {
+              const { key, label, icon: Icon, type, options } = field;
+              return (
               <div key={key} style={{ display: 'flex', alignItems: 'flex-start', gap: 12, padding: '10px 0', borderBottom: '1px solid var(--border)' }}>
                 <div style={{ width: 32, height: 32, borderRadius: 9, background: 'var(--accent-soft)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
                   <Icon width={16} height={16} color="var(--accent)" />
@@ -281,17 +344,31 @@ export default function ProfileModal({ profile, isOwnProfile, onClose, onUpdated
                 <div style={{ flex: 1 }}>
                   <div style={{ fontSize: 11, color: 'var(--text-muted)', fontWeight: 600, textTransform: 'uppercase' }}>{label}</div>
                   {editing ? (
-                    <input
-                      value={form[key] || ''}
-                      onChange={(e) => setForm({ ...form, [key]: e.target.value })}
-                      style={{ width: '100%', border: '1px solid var(--border)', borderRadius: 8, padding: '5px 8px', fontSize: 14, marginTop: 3, boxSizing: 'border-box', background: 'var(--bg-surface)', color: 'var(--text-primary)' }}
-                    />
+                    type === 'select' && options ? (
+                      <select
+                        value={form[key] || ''}
+                        onChange={(e) => setForm({ ...form, [key]: e.target.value })}
+                        style={{ width: '100%', border: '1px solid var(--border)', borderRadius: 8, padding: '5px 8px', fontSize: 14, marginTop: 3, boxSizing: 'border-box', background: 'var(--bg-surface)', color: 'var(--text-primary)' }}
+                      >
+                        <option value="">— নির্বাচন করুন —</option>
+                        {options.map((opt) => (
+                          <option key={opt} value={opt}>{opt}</option>
+                        ))}
+                      </select>
+                    ) : (
+                      <input
+                        value={form[key] || ''}
+                        onChange={(e) => setForm({ ...form, [key]: e.target.value })}
+                        style={{ width: '100%', border: '1px solid var(--border)', borderRadius: 8, padding: '5px 8px', fontSize: 14, marginTop: 3, boxSizing: 'border-box', background: 'var(--bg-surface)', color: 'var(--text-primary)' }}
+                      />
+                    )
                   ) : (
                     <div style={{ fontSize: 14, color: 'var(--text-primary)', fontWeight: 500, marginTop: 1 }}>{profile[key] || '—'}</div>
                   )}
                 </div>
               </div>
-            ))}
+            );
+            })}
 
             {/* স্কিল/এক্সপার্টিজ ট্যাগ — "কে কী বিষয়ে ভালো জানেন" খুঁজে পেতে */}
             <div style={{ display: 'flex', alignItems: 'flex-start', gap: 12, padding: '10px 0', borderBottom: '1px solid var(--border)' }}>
