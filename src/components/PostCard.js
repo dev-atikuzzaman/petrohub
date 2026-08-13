@@ -1,10 +1,11 @@
 // src/components/PostCard.js
 import React, { useState, useEffect, useRef } from 'react';
 import Avatar from './Avatar';
-import { HeartIcon, CommentIcon, SendIcon, TrashIcon, MoreIcon, EditIcon, LockIcon, GlobeIcon, CheckIcon, LoaderIcon, XIcon, BookmarkIcon } from './Icons';
-import { toggleReaction, toggleCommentReaction, createComment, deletePost, deleteComment, updatePost, togglePinPost, updateComment } from '../lib/dataService';
+import { HeartIcon, CommentIcon, SendIcon, TrashIcon, MoreIcon, EditIcon, LockIcon, GlobeIcon, CheckIcon, LoaderIcon, XIcon, BookmarkIcon, FlagIcon } from './Icons';
+import { toggleReaction, toggleCommentReaction, createComment, deletePost, deleteComment, updatePost, togglePinPost, updateComment, recordPostView } from '../lib/dataService';
 import { detectMentionTrigger, insertMention, renderTextWithMentions } from '../lib/mentions';
 import MentionSuggestions from './MentionSuggestions';
+import ReportPostModal from './ReportPostModal';
 
 const EMOJIS = ['👍', '❤️', '😂', '😮', '😢', '🔥'];
 
@@ -77,9 +78,18 @@ export default function PostCard({ post, currentUser, onUpdate, onOpenProfile, o
   const [updatingPrivacy, setUpdatingPrivacy] = useState(false);
   const [showReactors, setShowReactors] = useState(false);
   const [reactorsFilter, setReactorsFilter] = useState('all');
+  const [showReportModal, setShowReportModal] = useState(false);
 
   const menuRef = useRef(null);
   const emojiRef = useRef(null);
+
+  // পোস্টটা রেন্ডার হলে একবার "দেখা হয়েছে" হিসেবে রেকর্ড করা হয় (এনগেজমেন্ট অ্যানালিটিক্সের জন্য)
+  useEffect(() => {
+    if (post?.id && currentUser?.id) {
+      recordPostView(post.id, currentUser.id);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [post.id, currentUser.id]);
 
   // মেনু বা ইমোজি পিকারের বাইরে ক্লিক করলে সেটা বন্ধ হয়ে যাবে
   useEffect(() => {
@@ -238,17 +248,16 @@ export default function PostCard({ post, currentUser, onUpdate, onOpenProfile, o
           </div>
         </div>
 
-        {(isOwn || isAdmin) && (
-          <div ref={menuRef} style={{ position: 'relative' }}>
-            <button onClick={() => { setShowMenu(!showMenu); setShowPrivacyMenu(false); }} style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-muted)', padding: 4 }}>
-              {updatingPrivacy ? <LoaderIcon width={18} height={18} /> : <MoreIcon width={18} height={18} />}
-            </button>
-            {showMenu && (
-              <div style={{
-                position: 'absolute', right: 0, top: 28, background: 'var(--bg-surface)', borderRadius: 12,
-                boxShadow: '0 6px 20px rgba(0,0,0,0.15)', zIndex: 10, overflow: 'visible', minWidth: 170,
-              }}>
-                {isAdmin && (
+        <div ref={menuRef} style={{ position: 'relative' }}>
+          <button onClick={() => { setShowMenu(!showMenu); setShowPrivacyMenu(false); }} style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-muted)', padding: 4 }}>
+            {updatingPrivacy ? <LoaderIcon width={18} height={18} /> : <MoreIcon width={18} height={18} />}
+          </button>
+          {showMenu && (
+            <div style={{
+              position: 'absolute', right: 0, top: 28, background: 'var(--bg-surface)', borderRadius: 12,
+              boxShadow: '0 6px 20px rgba(0,0,0,0.15)', zIndex: 10, overflow: 'visible', minWidth: 170,
+            }}>
+              {isAdmin && (
                   <button
                     onClick={handlePin}
                     style={{
@@ -328,11 +337,30 @@ export default function PostCard({ post, currentUser, onUpdate, onOpenProfile, o
                   <TrashIcon width={14} height={14} /> মুছে ফেলুন
                 </button>
                 )}
+
+                {!isOwn && (
+                <button
+                  onClick={() => { setShowMenu(false); setShowReportModal(true); }}
+                  style={{
+                    display: 'flex', alignItems: 'center', gap: 8, padding: '10px 16px', border: 'none',
+                    background: 'none', color: 'var(--danger)', fontSize: 13, fontWeight: 600, cursor: 'pointer', width: '100%',
+                  }}
+                >
+                  <FlagIcon width={14} height={14} /> রিপোর্ট করুন
+                </button>
+                )}
               </div>
             )}
           </div>
-        )}
       </div>
+
+      {showReportModal && (
+        <ReportPostModal
+          postId={post.id}
+          currentUser={currentUser}
+          onClose={() => setShowReportModal(false)}
+        />
+      )}
 
       {isEditing ? (
         <div style={{ marginTop: 12 }}>

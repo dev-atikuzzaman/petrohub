@@ -48,3 +48,6 @@ export const PollIcon = (p) => <svg {...base} {...p}><rect x="3" y="12" width="4
 export const AwardIcon = (p) => <svg {...base} {...p}><circle cx="12" cy="8" r="6"/><path d="M8.21 13.89 7 23l5-3 5 3-1.21-9.12"/></svg>;
 export const BriefcaseIcon = (p) => <svg {...base} {...p}><rect x="2" y="7" width="20" height="14" rx="2" ry="2"/><path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"/></svg>;
 export const SparkleIcon = (p) => <svg {...base} {...p}><path d="M12 3v4M12 17v4M3 12h4M17 12h4M5.6 5.6l2.8 2.8M15.6 15.6l2.8 2.8M5.6 18.4l2.8-2.8M15.6 8.4l2.8-2.8"/></svg>;
+export const FlagIcon = (p) => <svg {...base} {...p}><path d="M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1z"/><line x1="4" y1="22" x2="4" y2="15"/></svg>;
+export const ActivityIcon = (p) => <svg {...base} {...p}><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>;
+export const EyeCheckIcon = (p) => <svg {...base} {...p}><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>;
