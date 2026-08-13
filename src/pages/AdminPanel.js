@@ -242,7 +242,7 @@ export default function AdminPanel({ onClose, currentUser, posts = [], members =
             <button key={i} onClick={() => setActiveTab(i)} style={{
               padding: '10px 14px', border: 'none', background: 'none', fontSize: 13, fontWeight: 700,
               cursor: 'pointer', borderBottom: activeTab === i ? `2px solid var(--accent)` : '2px solid transparent',
-              color: activeTab === i ? 'var(--accent)' : 'var(--text-secondary)', whiteSpace: 'nowrap',
+              color: activeTab === i ? 'var(--accent)' : 'var(--text-secondary)', whiteSpace: 'nowrap', flexShrink: 0,
             }}>
               {t}
               {i === 0 && pending.length > 0 && (

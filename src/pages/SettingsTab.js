@@ -2,7 +2,7 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../lib/AuthContext';
 import { useTheme } from '../lib/ThemeContext';
-import { EyeIcon, EyeOffIcon, LoaderIcon, LockIcon, EditIcon, PlusIcon, CheckIcon, BellIcon } from '../components/Icons';
+import { EyeIcon, EyeOffIcon, LoaderIcon, LockIcon, EditIcon, PlusIcon, CheckIcon, BellIcon, SearchIcon, ShieldIcon } from '../components/Icons';
 import { isPushSupported, getPushPermissionState, isSubscribed, subscribeToPush, unsubscribeFromPush } from '../lib/push';
 
 function Section({ title, icon, children, action }) {
@@ -139,7 +139,7 @@ function NotificationSection({ currentUser }) {
   );
 }
 
-export default function SettingsTab({ currentUser, onEditProfile }) {
+export default function SettingsTab({ currentUser, onEditProfile, onOpenSearch, onOpenAdminPanel, isAdmin }) {
   const { updatePassword, signOut } = useAuth();
 
   // Password change state
@@ -194,6 +194,32 @@ export default function SettingsTab({ currentUser, onEditProfile }) {
       <div style={{ marginBottom: 18 }}>
         <h2 style={{ margin: '0 0 4px', fontSize: 18, fontWeight: 800, color: 'var(--text-primary)' }}>সেটিংস</h2>
         <div style={{ fontSize: 12, color: 'var(--text-muted)' }}>{currentUser.email}</div>
+      </div>
+
+      {/* দ্রুত অ্যাক্সেস */}
+      <div style={{ display: 'flex', gap: 10, marginBottom: 14 }}>
+        <button
+          onClick={onOpenSearch}
+          style={{
+            flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 7, padding: '12px',
+            borderRadius: 14, border: 'none', background: 'var(--bg-surface)', boxShadow: 'var(--shadow)',
+            color: 'var(--text-primary)', fontWeight: 700, fontSize: 13, cursor: 'pointer',
+          }}
+        >
+          <SearchIcon width={16} height={16} /> সার্চ করুন
+        </button>
+        {isAdmin && (
+          <button
+            onClick={onOpenAdminPanel}
+            style={{
+              flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 7, padding: '12px',
+              borderRadius: 14, border: 'none', background: 'var(--admin-soft)', boxShadow: 'var(--shadow)',
+              color: 'var(--admin-color)', fontWeight: 700, fontSize: 13, cursor: 'pointer',
+            }}
+          >
+            <ShieldIcon width={16} height={16} /> Admin Panel
+          </button>
+        )}
       </div>
 
       {/* থিম */}
@@ -291,7 +317,6 @@ export default function SettingsTab({ currentUser, onEditProfile }) {
           {[
             ['নাম', currentUser.name],
             ['ইমেইল', currentUser.email],
-            ['ব্যাচ', currentUser.batch || 'Petro Special Foundation Training 2026'],
             ['প্রতিষ্ঠান', currentUser.current_company || '—'],
             ['পদবী', currentUser.designation || '—'],
           ].map(([label, value]) => (
