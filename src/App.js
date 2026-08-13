@@ -19,10 +19,9 @@ import ImportantUpdatesTab from './pages/ImportantUpdatesTab';
 import DocumentsTab from './pages/DocumentsTab';
 import SettingsTab from './pages/SettingsTab';
 import MeetingTab from './pages/MeetingTab';
-import ThemeSwitcher from './components/ThemeSwitcher';
 import { ThemeProvider } from './lib/ThemeContext';
 import { getAllProfiles, getPostsWithDetails, subscribeToPosts, subscribeToProfiles, getBadges, getMemberBadges, getPollsWithDetails, getJobPostings } from './lib/dataService';
-import { HomeIcon, UsersIcon, ChartIcon, LogOutIcon, ShieldIcon, WifiOffIcon, LoaderIcon, NoteIcon, BellIcon, FolderIcon, GlobeIcon, VideoIcon, SearchIcon, TrophyIcon, BriefcaseIcon } from './components/Icons';
+import { HomeIcon, UsersIcon, ChartIcon, WifiOffIcon, LoaderIcon, NoteIcon, BellIcon, FolderIcon, GlobeIcon, VideoIcon, TrophyIcon, BriefcaseIcon } from './components/Icons';
 import GlobalSearchModal from './components/GlobalSearchModal';
 
 // SettingsIcon inline যোগ করা হলো
@@ -194,31 +193,7 @@ function AppShell() {
         </div>
 
         <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-          <button
-            onClick={() => setShowSearch(true)}
-            title="সার্চ করুন"
-            style={{ background: 'var(--bg-surface-alt)', border: 'none', borderRadius: 10, padding: 8, cursor: 'pointer', display: 'flex', color: 'var(--text-secondary)' }}
-          >
-            <SearchIcon width={17} height={17} />
-          </button>
-          <ThemeSwitcher />
-          {isAdmin && (
-            <button
-              onClick={() => setShowAdminPanel(true)}
-              title="Admin Panel"
-              style={{ background: 'var(--admin-soft)', border: 'none', borderRadius: 10, padding: 8, cursor: 'pointer', display: 'flex' }}
-            >
-              <ShieldIcon width={17} height={17} color="var(--admin-color)" />
-            </button>
-          )}
           <Avatar name={profile.name} src={profile.avatar_url} size={36} onClick={() => setViewingProfile(profile)} />
-          <button
-            onClick={signOut}
-            title="লগআউট"
-            style={{ background: 'var(--bg-surface-alt)', border: 'none', borderRadius: 10, padding: 8, cursor: 'pointer', display: 'flex', color: 'var(--text-secondary)' }}
-          >
-            <LogOutIcon width={16} height={16} />
-          </button>
         </div>
       </header>
 
@@ -259,7 +234,13 @@ function AppShell() {
         ) : tab === 'meeting' ? (
           <MeetingTab currentUser={profile} members={members} />
         ) : tab === 'settings' ? (
-          <SettingsTab currentUser={profile} onEditProfile={() => { setProfileEditIntent(true); setViewingProfile(profile); }} />
+          <SettingsTab
+            currentUser={profile}
+            onEditProfile={() => { setProfileEditIntent(true); setViewingProfile(profile); }}
+            onOpenSearch={() => setShowSearch(true)}
+            onOpenAdminPanel={() => setShowAdminPanel(true)}
+            isAdmin={isAdmin}
+          />
         ) : (
           <StatsTab members={members} posts={posts} />
         )}
