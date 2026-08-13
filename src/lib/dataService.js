@@ -242,6 +242,7 @@ export function subscribeToAppChanges(onChange) {
     .on('postgres_changes', { event: '*', schema: 'public', table: 'poll_options' }, wrappedOnChange)
     .on('postgres_changes', { event: '*', schema: 'public', table: 'poll_votes' }, wrappedOnChange)
     .on('postgres_changes', { event: '*', schema: 'public', table: 'job_postings' }, wrappedOnChange)
+    .on('postgres_changes', { event: '*', schema: 'public', table: 'post_reports' }, wrappedOnChange)
     .subscribe((status) => {
       if (status === 'SUBSCRIBED') {
         console.log('✅ Realtime channel connected (posts + profiles)');
@@ -813,5 +814,56 @@ export async function updateJobPosting(id, updates) {
 export async function deleteJobPosting(id) {
   const { error } = await supabase.from('job_postings').delete().eq('id', id);
   if (error) console.error('❌ deleteJobPosting:', error.message);
+  return { error };
+}
+
+// ============================================================
+// এনগেজমেন্ট অ্যানালিটিক্স (Post Views)
+// ============================================================
+export async function recordPostView(postId, userId) {
+  // duplicate view (unique constraint) হলে চুপচাপ ignore করা হয় — এটা normal, error না
+  const { error } = await supabase.from('post_views').insert({ post_id: postId, user_id: userId });
+  if (error && error.code !== '23505') console.error('❌ recordPostView:', error.message);
+  return { error };
+}
+
+export async function getAllPostViews() {
+  const { data, error } = await supabase.from('post_views').select('post_id, user_id, viewed_at');
+  if (error) { console.error('❌ getAllPostViews:', error.message); return []; }
+  return data;
+}
+
+// ============================================================
+// রিপোর্ট / মডারেশন (Post Reports)
+// ============================================================
+export async function reportPost(postId, userId, reason) {
+  const { data, error } = await supabase
+    .from('post_reports')
+    .insert({ post_id: postId, reported_by: userId, reason })
+    .select()
+    .single();
+  if (error) console.error('❌ reportPost:', error.message);
+  return { data, error };
+}
+
+export async function getPostReports() {
+  const { data, error } = await supabase
+    .from('post_reports')
+    .select(`
+      *,
+      post:posts ( id, text, image_url, user_id, created_at, author:profiles!posts_user_id_fkey ( id, name, avatar_url ) ),
+      reporter:profiles!post_reports_reported_by_fkey ( id, name, avatar_url )
+    `)
+    .order('created_at', { ascending: false });
+  if (error) { console.error('❌ getPostReports:', error.message); return []; }
+  return data;
+}
+
+export async function resolveReport(reportId, status, resolvedBy) {
+  const { error } = await supabase
+    .from('post_reports')
+    .update({ status, resolved_by: resolvedBy, resolved_at: new Date().toISOString() })
+    .eq('id', reportId);
+  if (error) console.error('❌ resolveReport:', error.message);
   return { error };
 }
