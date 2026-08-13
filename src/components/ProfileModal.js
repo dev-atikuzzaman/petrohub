@@ -12,7 +12,6 @@ import { compressAvatar } from '../lib/imageCompress';
 import { useAuth } from '../lib/AuthContext';
 
 const FIELDS = [
-  { key: 'batch', label: 'ব্যাচ', icon: GraduationIcon },
   { key: 'phone', label: 'ফোন', icon: PhoneIcon },
   { key: 'district', label: 'জেলা', icon: MapPinIcon },
   { key: 'university', label: 'বিশ্ববিদ্যালয়', icon: GraduationIcon },
