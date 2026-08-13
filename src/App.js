@@ -302,7 +302,7 @@ function AppShell() {
         />
       )}
 
-      {showAdminPanel && <AdminPanel onClose={() => setShowAdminPanel(false)} currentUser={profile} />}
+      {showAdminPanel && <AdminPanel onClose={() => setShowAdminPanel(false)} currentUser={profile} posts={posts} members={members} />}
 
       {showSearch && (
         <GlobalSearchModal
