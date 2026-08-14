@@ -16,5 +16,25 @@
   <body>
     <noscript>আপনার ব্রাউজারে JavaScript চালু করতে হবে এই অ্যাপ ব্যবহার করতে।</noscript>
     <div id="root"></div>
+    <script>
+      // ফলব্যাক সেফটি-নেট: React কোনো কারণে rootElement-এ কিছুই রেন্ডার করতে না পারলে
+      // (module-level crash, script লোড ব্যর্থ, ইত্যাদি — যেগুলো ErrorBoundary ধরতে পারে না)
+      // ৪ সেকেন্ড পর চেক করে খালি সাদা স্ক্রিনের বদলে একটা বোঝা যায় এমন মেসেজ দেখানো হয়।
+      setTimeout(function () {
+        var root = document.getElementById('root');
+        if (root && root.children.length === 0) {
+          root.innerHTML =
+            '<div style="min-height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center;' +
+            'padding:24px;text-align:center;background:#f8fafc;font-family:sans-serif;">' +
+            '<div style="font-size:44px;margin-bottom:12px;">⚠️</div>' +
+            '<h2 style="margin:0 0 8px;color:#0f172a;">অ্যাপ লোড হতে ব্যর্থ হয়েছে</h2>' +
+            '<p style="color:#64748b;font-size:14px;max-width:340px;line-height:1.6;margin-bottom:20px;">' +
+            'ইন্টারনেট সংযোগ বা ক্যাশ-এ সমস্যা থাকতে পারে। নিচের বাটনে চাপ দিয়ে ক্যাশ পরিষ্কার করে আবার চেষ্টা করুন।</p>' +
+            '<button onclick="if(\'caches\' in window){caches.keys().then(function(n){n.forEach(function(k){caches.delete(k)})})}; if(\'serviceWorker\' in navigator){navigator.serviceWorker.getRegistrations().then(function(r){r.forEach(function(x){x.unregister()})})}; location.reload(true);" ' +
+            'style="padding:12px 24px;border-radius:12px;border:none;background:#1e3a5f;color:#fff;font-weight:700;font-size:14px;">আবার চেষ্টা করুন</button>' +
+            '</div>';
+        }
+      }, 4000);
+    </script>
   </body>
 </html>
