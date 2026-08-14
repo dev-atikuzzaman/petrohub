@@ -36,7 +36,7 @@ const SOURCES = [
 
 const PER_SOURCE_LIMIT = 12;
 const TOTAL_LIMIT = 200;
-const FETCH_TIMEOUT_MS = 4500; // retry যোগ হয়েছে বলে কমানো হলো (২ attempt মিলিয়ে Vercel-এর ১০সে সীমার মধ্যে থাকতে)
+const FETCH_TIMEOUT_MS = 7000;
 
 // ---- ছোট্ট RSS/Atom পার্সার (কোনো এক্সট্রা প্যাকেজ ছাড়াই) ------
 
@@ -124,30 +124,21 @@ function parseFeed(xml, source) {
   return items;
 }
 
-async function fetchFeed(source, attempt = 1) {
+async function fetchFeed(source) {
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), FETCH_TIMEOUT_MS);
   try {
     const res = await fetch(source.url, {
       headers: {
-        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36',
+        'User-Agent': 'Mozilla/5.0 (compatible; PetroHubNewsBot/1.0; +https://petrohub.app)',
         Accept: 'application/rss+xml, application/xml, text/xml, */*',
-        'Accept-Language': 'bn-BD,bn;q=0.9,en-US;q=0.8,en;q=0.7',
-        Referer: 'https://www.google.com/',
       },
-      redirect: 'follow',
       signal: controller.signal,
     });
     if (!res.ok) throw new Error(`HTTP ${res.status}`);
     const xml = await res.text();
-    const items = parseFeed(xml, source);
-    if (items.length === 0 && attempt < 2) {
-      // খালি রেজাল্ট এলে একবার রিট্রাই করি (সাময়িক bot-protection হতে পারে)
-      return fetchFeed(source, attempt + 1);
-    }
-    return { source, items, ok: true };
+    return { source, items: parseFeed(xml, source), ok: true };
   } catch (err) {
-    if (attempt < 2) return fetchFeed(source, attempt + 1);
     return { source, items: [], ok: false, error: err.message };
   } finally {
     clearTimeout(timer);
