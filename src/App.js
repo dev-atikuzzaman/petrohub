@@ -15,13 +15,14 @@ import JobBoardTab from './pages/JobBoardTab';
 import AdminPanel from './pages/AdminPanel';
 import NotesTab from './pages/NotesTab';
 import WebsitesTab from './pages/WebsitesTab';
+import NewsTab from './pages/NewsTab';
 import ImportantUpdatesTab from './pages/ImportantUpdatesTab';
 import DocumentsTab from './pages/DocumentsTab';
 import SettingsTab from './pages/SettingsTab';
 import MeetingTab from './pages/MeetingTab';
 import { ThemeProvider } from './lib/ThemeContext';
 import { getAllProfiles, getPostsWithDetails, subscribeToPosts, subscribeToProfiles, getBadges, getMemberBadges, getPollsWithDetails, getJobPostings } from './lib/dataService';
-import { HomeIcon, UsersIcon, ChartIcon, WifiOffIcon, LoaderIcon, NoteIcon, BellIcon, FolderIcon, GlobeIcon, VideoIcon, TrophyIcon, BriefcaseIcon, SearchIcon } from './components/Icons';
+import { HomeIcon, UsersIcon, ChartIcon, WifiOffIcon, LoaderIcon, NoteIcon, BellIcon, FolderIcon, GlobeIcon, VideoIcon, TrophyIcon, BriefcaseIcon, SearchIcon, NewsIcon } from './components/Icons';
 import GlobalSearchModal from './components/GlobalSearchModal';
 
 // SettingsIcon inline যোগ করা হলো
@@ -153,6 +154,7 @@ function AppShell() {
 
   const tabs = [
     { key: 'feed', label: 'ফিড', icon: HomeIcon },
+    { key: 'news', label: 'নিউজ', icon: NewsIcon },
     { key: 'members', label: 'সদস্য', icon: UsersIcon },
     { key: 'leaderboard', label: 'স্বীকৃতি', icon: TrophyIcon },
     { key: 'jobs', label: 'সুযোগ', icon: BriefcaseIcon },
@@ -215,6 +217,8 @@ function AppShell() {
           </div>
         ) : tab === 'feed' ? (
           <FeedTab posts={posts} polls={polls} currentUser={profile} onUpdate={loadData} onOpenProfile={(p) => p && setViewingProfile(members.find((m) => m.id === p.id) || p)} isAdmin={isAdmin} members={members} />
+        ) : tab === 'news' ? (
+          <NewsTab />
         ) : tab === 'members' ? (
           <MembersTab members={members} onOpenProfile={setViewingProfile} />
         ) : tab === 'leaderboard' ? (
