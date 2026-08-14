@@ -43,17 +43,20 @@ export default function NewsTab() {
 
   const load = useCallback(async (isManualRefresh) => {
     if (isManualRefresh) setRefreshing(true);
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 20000);
     try {
-      const res = await fetch('/api/news');
-      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      const res = await fetch('/api/news', { signal: controller.signal });
+      if (!res.ok) throw new Error(`সার্ভার থেকে ${res.status} পাওয়া গেছে`);
       const data = await res.json();
       setItems(data.items || []);
       setUpdatedAt(data.updatedAt || null);
       setError(null);
     } catch (err) {
       console.error('❌ news load failed:', err);
-      setError('নিউজ লোড করা যায়নি। আবার চেষ্টা করুন।');
+      setError(err.name === 'AbortError' ? 'নিউজ লোড করতে অনেক সময় লাগছে। আবার চেষ্টা করুন।' : 'নিউজ লোড করা যায়নি। আবার চেষ্টা করুন।');
     } finally {
+      clearTimeout(timeoutId);
       setLoading(false);
       setRefreshing(false);
     }
