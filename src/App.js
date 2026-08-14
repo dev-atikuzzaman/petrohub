@@ -20,9 +20,10 @@ import ImportantUpdatesTab from './pages/ImportantUpdatesTab';
 import DocumentsTab from './pages/DocumentsTab';
 import SettingsTab from './pages/SettingsTab';
 import MeetingTab from './pages/MeetingTab';
+import KeywordsTab from './pages/KeywordsTab';
 import { ThemeProvider } from './lib/ThemeContext';
 import { getAllProfiles, getPostsWithDetails, subscribeToPosts, subscribeToProfiles, getBadges, getMemberBadges, getPollsWithDetails, getJobPostings } from './lib/dataService';
-import { HomeIcon, UsersIcon, ChartIcon, WifiOffIcon, LoaderIcon, NoteIcon, BellIcon, FolderIcon, GlobeIcon, VideoIcon, TrophyIcon, BriefcaseIcon, SearchIcon, NewsIcon } from './components/Icons';
+import { HomeIcon, UsersIcon, ChartIcon, WifiOffIcon, LoaderIcon, NoteIcon, BellIcon, FolderIcon, GlobeIcon, VideoIcon, TrophyIcon, BriefcaseIcon, SearchIcon, NewsIcon, TagIcon } from './components/Icons';
 import GlobalSearchModal from './components/GlobalSearchModal';
 
 // SettingsIcon inline যোগ করা হলো
@@ -163,6 +164,7 @@ function AppShell() {
     { key: 'websites', label: 'ওয়েবসাইট', icon: GlobeIcon },
     { key: 'documents', label: 'ডকুমেন্ট', icon: FolderIcon },
     { key: 'meeting', label: 'মিটিং', icon: VideoIcon },
+    { key: 'keywords', label: 'কীওয়ার্ড', icon: TagIcon },
     { key: 'stats', label: 'পরিসংখ্যান', icon: ChartIcon },
     { key: 'settings', label: 'সেটিংস', icon: SettingsIcon },
   ];
@@ -244,6 +246,8 @@ function AppShell() {
           <DocumentsTab currentUser={profile} />
         ) : tab === 'meeting' ? (
           <MeetingTab currentUser={profile} members={members} />
+        ) : tab === 'keywords' ? (
+          <KeywordsTab />
         ) : tab === 'settings' ? (
           <SettingsTab
             currentUser={profile}
