@@ -69,8 +69,8 @@ function getFileCategory(file) {
   return 'other';
 }
 
-// ── Claude API কল ──────────────────────────────────────────────────────────
-async function analyzeWithClaude(file) {
+// ── Gemini API কল (proxy দিয়ে) ─────────────────────────────────────────────
+async function analyzeWithGemini(file) {
   const category = getFileCategory(file);
   const systemPrompt = `তুমি একজন বিশেষজ্ঞ keyword বিশ্লেষক। ডকুমেন্ট/ফাইল থেকে সবচেয়ে গুরুত্বপূর্ণ General ও Technical keyword গুলো চিহ্নিত করো।
 
@@ -144,7 +144,7 @@ async function analyzeWithClaude(file) {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({
-      model: 'claude-sonnet-4-6',
+      model: 'gemini-2.0-flash',
       max_tokens: 4000,
       system: systemPrompt,
       messages,
@@ -248,7 +248,7 @@ export default function KeywordAnalyzerTab() {
     setResult(null);
     setSelected(null);
     try {
-      const res = await analyzeWithClaude(file);
+      const res = await analyzeWithGemini(file);
       setResult(res);
     } catch (e) {
       setError(e.message || 'কোনো সমস্যা হয়েছে, আবার চেষ্টা করুন।');
