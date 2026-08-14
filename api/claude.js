@@ -65,7 +65,8 @@ export default async function handler(req, res) {
       },
     };
 
-    const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`;
+    const modelName = 'gemini-2.5-flash'; // gemini-2.0-flash বন্ধ হয়ে গেছে (retired), তাই আপডেট করা হলো
+    const url = `https://generativelanguage.googleapis.com/v1beta/models/${modelName}:generateContent?key=${apiKey}`;
 
     const response = await fetch(url, {
       method: 'POST',
