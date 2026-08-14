@@ -1,6 +1,6 @@
 // src/pages/KeywordAnalyzerTab.js
 import React, { useState, useRef } from 'react';
-import { LoaderIcon, SearchIcon, DownloadIcon, XIcon, TagIcon } from '../components/Icons';
+import { LoaderIcon, SearchIcon, DownloadIcon, TagIcon } from '../components/Icons';
 
 // ── শেয়ার আইকন (inline) ─────────────────────────────────────────────────────
 const ShareIcon = (p) => (
@@ -469,11 +469,11 @@ export default function KeywordAnalyzerTab() {
           <div style={{ display: 'flex', gap: 6, marginBottom: 14 }}>
             {[['all', 'সব'], ['general', 'General'], ['technical', 'Technical']].map(([val, label]) => (
               <button key={val} onClick={() => setFilter(val)} style={{
-                padding: '7px 14px', borderRadius: 20, border: 'none',
+                padding: '7px 14px', borderRadius: 20,
+                border: filter === val ? 'none' : '1px solid var(--border)',
                 background: filter === val ? 'var(--accent-gradient)' : 'var(--bg-surface)',
                 color: filter === val ? '#fff' : 'var(--text-secondary)',
                 fontWeight: 700, fontSize: 12, cursor: 'pointer',
-                border: filter === val ? 'none' : '1px solid var(--border)',
               }}>
                 {label} {val === 'all' ? `(${result.total_keywords})` :
                   val === 'general' ? `(${result.general_count})` : `(${result.technical_count})`}
