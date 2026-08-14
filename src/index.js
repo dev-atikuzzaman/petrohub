@@ -14,13 +14,8 @@ root.render(
   </React.StrictMode>
 );
 
-// PWA Service Worker Registration
-if ('serviceWorker' in navigator) {
-  window.addEventListener('load', () => {
-    navigator.serviceWorker.register('/service-worker.js')
-      .then(reg => console.log('✅ PWA Service Worker registered'))
-      .catch(err => console.log('⚠️ Service Worker registration failed:', err));
-  });
-}
+// নোট: Service Worker রেজিস্ট্রেশন এখন public/index.html-এ সরানো হয়েছে,
+// যাতে এই bundle crash করলেও (যেমন কোনো module import-এর সময় error) PWA
+// installability অক্ষত থাকে।
 
 reportWebVitals();
