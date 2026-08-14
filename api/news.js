@@ -17,6 +17,9 @@ const SOURCES = [
   { id: 'bdnews24', name: 'bdnews24', url: 'https://bdnews24.com/?widgetName=rssfeed&widgetId=1150&getXmlFeed=true', category: 'bangladesh', lang: 'bn' },
   { id: 'banglanews24', name: 'বাংলা নিউজ ২৪', url: 'https://www.banglanews24.com/rss/rss.xml', category: 'bangladesh', lang: 'bn' },
   { id: 'bbcbangla', name: 'বিবিসি বাংলা', url: 'https://feeds.bbci.co.uk/bengali/rss.xml', category: 'bangladesh', lang: 'bn' },
+  { id: 'nayadiganta', name: 'নয়া দিগন্ত', url: 'https://www.dailynayadiganta.com/rss.xml', category: 'bangladesh', lang: 'bn' },
+  { id: 'amardesh', name: 'আমার দেশ', url: 'https://www.dailyamardesh.com/rss.xml', category: 'bangladesh', lang: 'bn' },
+  { id: 'jagonews24', name: 'জাগো নিউজ ২৪', url: 'https://www.jagonews24.com/rss/rss.xml', category: 'bangladesh', lang: 'bn' },
 
   // আন্তর্জাতিক
   { id: 'bbcworld', name: 'BBC World', url: 'https://feeds.bbci.co.uk/news/world/rss.xml', category: 'international', lang: 'en' },
@@ -35,7 +38,7 @@ const SOURCES = [
 ];
 
 const PER_SOURCE_LIMIT = 12;
-const TOTAL_LIMIT = 200;
+const TOTAL_LIMIT = 240;
 const FETCH_TIMEOUT_MS = 7000;
 
 // ---- ছোট্ট RSS/Atom পার্সার (কোনো এক্সট্রা প্যাকেজ ছাড়াই) ------
@@ -56,7 +59,12 @@ function decodeEntities(str) {
 
 function stripTags(str) {
   if (!str) return '';
-  return decodeEntities(String(str).replace(/<[^>]*>/g, ' ')).replace(/\s+/g, ' ').trim();
+  // আগে entity ডিকোড করতে হবে (Google News-এর মতো ফিডে description-এর
+  // ভেতরের HTML ট্যাগ &lt;a href=...&gt; আকারে escape করা থাকে) — তারপর
+  // আসল ট্যাগ সরানো। উল্টো ক্রমে করলে escape করা ট্যাগ/লিংক ডিকোডের পর
+  // প্লেইন টেক্সট হিসেবে থেকে যেত এবং কার্ডে URL/এড্রেস দেখা যেত।
+  const decoded = decodeEntities(String(str));
+  return decoded.replace(/<[^>]*>/g, ' ').replace(/\s+/g, ' ').trim();
 }
 
 function matchTag(block, tag) {
@@ -98,25 +106,69 @@ function parseDate(str) {
   return isNaN(d.getTime()) ? null : d;
 }
 
+// ---- ক্যাটাগরি ক্লাসিফায়ার -------------------------------------
+// অনেক বাংলা পত্রিকার (প্রথম আলো, নয়া দিগন্ত, আমার দেশ, যুগান্তর...)
+// একটাই সাধারণ RSS ফিড থাকে — আলাদা বাণিজ্য/প্রযুক্তি সেকশন ফিড নেই।
+// তাই শিরোনাম/বিবরণে কিওয়ার্ড মিলিয়ে সেগুলোকে "topics" হিসেবে extra
+// ট্যাগ দেওয়া হয়, যাতে ব্যবসা/প্রযুক্তি/আন্তর্জাতিক ফিল্টারেও এই
+// পত্রিকাগুলোর প্রাসঙ্গিক খবর দেখা যায়।
+const TOPIC_KEYWORDS = {
+  business: [
+    'অর্থনীতি', 'বাণিজ্য', 'ব্যবসা', 'শেয়ারবাজার', 'পুঁজিবাজার', 'ডলারের', 'টাকার দর',
+    'আমদানি', 'রপ্তানি', 'ব্যাংক', 'বাজেট', 'মূল্যস্ফীতি', 'রাজস্ব', 'জিডিপি', 'বিনিয়োগ',
+    'শুল্ক', 'কর ', 'ভ্যাট', 'শিল্প', 'কৃষি বাজার', 'মুদ্রা', 'stock market', 'economy',
+    'economic', 'trade', 'export', 'import', 'inflation', 'gdp', 'investment', 'business',
+  ],
+  technology: [
+    'প্রযুক্তি', 'মোবাইল', 'ইন্টারনেট', 'অ্যাপ', 'সফটওয়্যার', 'কম্পিউটার', 'স্মার্টফোন',
+    'ফেসবুক', 'গুগল', 'কৃত্রিম বুদ্ধিমত্তা', 'সাইবার', 'ওয়েবসাইট', 'গেজেট', 'রোবট',
+    'technology', 'smartphone', 'software', 'internet', 'cyber', 'artificial intelligence',
+    'startup', 'gadget', 'app ',
+  ],
+  international: [
+    'আন্তর্জাতিক', 'বিশ্ব', 'যুক্তরাষ্ট্র', 'আমেরিকা', 'ভারত', 'পাকিস্তান', 'চীন', 'রাশিয়া',
+    'ইউক্রেন', 'ইসরায়েল', 'গাজা', 'ফিলিস্তিন', 'জাতিসংঘ', 'যুক্তরাজ্য', 'ইউরোপ', 'মধ্যপ্রাচ্য',
+    'আফগানিস্তান', 'মিয়ানমার', 'জাপান', 'কানাডা', 'অস্ট্রেলিয়া',
+    'international', 'united states', 'united nations',
+  ],
+};
+
+function classifyTopics(title, description) {
+  const text = `${title} ${description}`.toLowerCase();
+  const topics = [];
+  for (const [topic, keywords] of Object.entries(TOPIC_KEYWORDS)) {
+    if (keywords.some((kw) => text.includes(kw.toLowerCase()))) topics.push(topic);
+  }
+  return topics;
+}
+
 function parseFeed(xml, source) {
   if (!xml) return [];
   const blocks = xml.match(/<item[\s\S]*?<\/item>/gi) || xml.match(/<entry[\s\S]*?<\/entry>/gi) || [];
 
   const items = blocks.slice(0, PER_SOURCE_LIMIT).map((block) => {
     const rawTitle = matchTag(block, 'title');
-    const description = matchTag(block, 'description') || matchTag(block, 'summary') || matchTag(block, 'content:encoded') || matchTag(block, 'content');
+    const rawDescription = matchTag(block, 'description') || matchTag(block, 'summary') || matchTag(block, 'content:encoded') || matchTag(block, 'content');
     const pubDateStr = matchTag(block, 'pubDate') || matchTag(block, 'published') || matchTag(block, 'updated') || matchTag(block, 'dc:date');
     const date = parseDate(pubDateStr);
 
+    const title = stripTags(rawTitle);
+    // Google News-এর description আসলে টাইটেল + সোর্স নামের পুনরাবৃত্তি মাত্র,
+    // প্রকৃত সারাংশ না — তাই এটা দেখানো হয় না, খামোখা এক্সট্রা টেক্সট এড়াতে
+    const isGoogleNews = source.id === 'google_bd' || source.id === 'google_world';
+    const description = isGoogleNews ? '' : stripTags(rawDescription).slice(0, 220);
+    const topics = classifyTopics(title, description).filter((t) => t !== source.category);
+
     return {
-      title: stripTags(rawTitle),
+      title,
       link: extractLink(block),
-      description: stripTags(description).slice(0, 220),
+      description,
       image: extractImage(block),
       pubDate: date ? date.toISOString() : null,
       source: source.name,
       sourceId: source.id,
       category: source.category,
+      topics,
       lang: source.lang,
     };
   }).filter((it) => it.title && it.link);
