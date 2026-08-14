@@ -20,9 +20,10 @@ import ImportantUpdatesTab from './pages/ImportantUpdatesTab';
 import DocumentsTab from './pages/DocumentsTab';
 import SettingsTab from './pages/SettingsTab';
 import MeetingTab from './pages/MeetingTab';
+import KeywordAnalyzerTab from './pages/KeywordAnalyzerTab';
 import { ThemeProvider } from './lib/ThemeContext';
 import { getAllProfiles, getPostsWithDetails, subscribeToPosts, subscribeToProfiles, getBadges, getMemberBadges, getPollsWithDetails, getJobPostings } from './lib/dataService';
-import { HomeIcon, UsersIcon, ChartIcon, WifiOffIcon, LoaderIcon, NoteIcon, BellIcon, FolderIcon, GlobeIcon, VideoIcon, TrophyIcon, BriefcaseIcon, SearchIcon, NewsIcon } from './components/Icons';
+import { HomeIcon, UsersIcon, ChartIcon, WifiOffIcon, LoaderIcon, NoteIcon, BellIcon, FolderIcon, GlobeIcon, VideoIcon, TrophyIcon, BriefcaseIcon, SearchIcon, NewsIcon, TagIcon } from './components/Icons';
 import GlobalSearchModal from './components/GlobalSearchModal';
 
 // SettingsIcon inline যোগ করা হলো
@@ -154,6 +155,7 @@ function AppShell() {
 
   const tabs = [
     { key: 'feed', label: 'ফিড', icon: HomeIcon },
+    { key: 'keywords', label: 'কিওয়ার্ড', icon: TagIcon },
     { key: 'news', label: 'নিউজ', icon: NewsIcon },
     { key: 'members', label: 'সদস্য', icon: UsersIcon },
     { key: 'leaderboard', label: 'স্বীকৃতি', icon: TrophyIcon },
@@ -242,6 +244,8 @@ function AppShell() {
           <WebsitesTab />
         ) : tab === 'documents' ? (
           <DocumentsTab currentUser={profile} />
+        ) : tab === 'keywords' ? (
+          <KeywordAnalyzerTab currentUser={profile} />
         ) : tab === 'meeting' ? (
           <MeetingTab currentUser={profile} members={members} />
         ) : tab === 'settings' ? (
