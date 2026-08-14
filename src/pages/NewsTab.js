@@ -67,7 +67,9 @@ export default function NewsTab() {
 
   const filtered = useMemo(() => {
     let list = items;
-    if (activeCategory !== 'all') list = list.filter((it) => it.category === activeCategory);
+    if (activeCategory !== 'all') {
+      list = list.filter((it) => it.category === activeCategory || (it.topics && it.topics.includes(activeCategory)));
+    }
     if (query.trim()) {
       const q = query.trim().toLowerCase();
       list = list.filter((it) => it.title.toLowerCase().includes(q) || (it.description || '').toLowerCase().includes(q) || it.source.toLowerCase().includes(q));
