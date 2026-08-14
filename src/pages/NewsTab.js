@@ -40,6 +40,7 @@ export default function NewsTab() {
   const [updatedAt, setUpdatedAt] = useState(null);
   const [activeCategory, setActiveCategory] = useState('all');
   const [query, setQuery] = useState('');
+  const [failedSources, setFailedSources] = useState([]);
 
   const load = useCallback(async (isManualRefresh) => {
     if (isManualRefresh) setRefreshing(true);
@@ -49,6 +50,7 @@ export default function NewsTab() {
       const data = await res.json();
       setItems(data.items || []);
       setUpdatedAt(data.updatedAt || null);
+      setFailedSources(data.failedSources || []);
       setError(null);
     } catch (err) {
       console.error('❌ news load failed:', err);
@@ -148,6 +150,13 @@ export default function NewsTab() {
       ) : filtered.length === 0 ? (
         <div style={{ textAlign: 'center', padding: 40, color: 'var(--text-muted)', fontSize: 13 }}>
           কোনো খবর পাওয়া যায়নি।
+          {items.length === 0 && failedSources.length > 0 && (
+            <div style={{ marginTop: 10, fontSize: 11, color: 'var(--text-muted)', textAlign: 'left', maxWidth: 320, margin: '10px auto 0' }}>
+              সমস্যা: {failedSources.length}টি সোর্স থেকে খবর আনা যায়নি —
+              {failedSources.slice(0, 4).map((f) => ` ${f.name}`).join(',')}
+              {failedSources.length > 4 ? ' ...' : ''}
+            </div>
+          )}
         </div>
       ) : (
         <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
