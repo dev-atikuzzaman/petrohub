@@ -43,6 +43,31 @@ function fileToBase64(file) {
   });
 }
 
+// ── Image resize (Gemini max ~4MB base64) ───────────────────────────────────
+function resizeImageToBase64(file, maxWidth = 1600, quality = 0.82) {
+  return new Promise((resolve, reject) => {
+    const url = URL.createObjectURL(file);
+    const img = new Image();
+    img.onload = () => {
+      let { width, height } = img;
+      if (width > maxWidth) {
+        height = Math.round((height * maxWidth) / width);
+        width = maxWidth;
+      }
+      const canvas = document.createElement('canvas');
+      canvas.width = width;
+      canvas.height = height;
+      const ctx = canvas.getContext('2d');
+      ctx.drawImage(img, 0, 0, width, height);
+      const dataUrl = canvas.toDataURL('image/jpeg', quality);
+      URL.revokeObjectURL(url);
+      resolve(dataUrl.split(',')[1]);
+    };
+    img.onerror = () => reject(new Error('ছবি লোড ব্যর্থ'));
+    img.src = url;
+  });
+}
+
 // ── ফাইল → text (plain text ফাইলের জন্য) ─────────────────────────────────
 function fileToText(file) {
   return new Promise((res, rej) => {
@@ -102,12 +127,12 @@ async function analyzeWithGemini(file) {
   let messages = [];
 
   if (category === 'image') {
-    const base64 = await fileToBase64(file);
-    const mediaType = file.type || 'image/jpeg';
+    // বড় ছবি resize করো (Gemini-র সীমা মাথায় রেখে)
+    const base64 = await resizeImageToBase64(file);
     messages = [{
       role: 'user',
       content: [
-        { type: 'image', source: { type: 'base64', media_type: mediaType, data: base64 } },
+        { type: 'image', source: { type: 'base64', media_type: 'image/jpeg', data: base64 } },
         { type: 'text', text: 'এই ছবি/ডকুমেন্ট থেকে সকল গুরুত্বপূর্ণ General ও Technical keyword চিহ্নিত করো এবং নির্দিষ্ট JSON ফরম্যাটে বিস্তারিত তথ্য দাও।' }
       ]
     }];
@@ -153,7 +178,8 @@ async function analyzeWithGemini(file) {
 
   if (!response.ok) {
     const err = await response.json().catch(() => ({}));
-    throw new Error(err.error?.message || 'API সমস্যা হয়েছে');
+    const msg = err.error || err.error?.message || JSON.stringify(err);
+    throw new Error(typeof msg === 'string' ? msg : JSON.stringify(msg));
   }
 
   const data = await response.json();
