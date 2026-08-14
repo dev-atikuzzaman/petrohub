@@ -20,10 +20,9 @@ import ImportantUpdatesTab from './pages/ImportantUpdatesTab';
 import DocumentsTab from './pages/DocumentsTab';
 import SettingsTab from './pages/SettingsTab';
 import MeetingTab from './pages/MeetingTab';
-import KeywordAnalyzerTab from './pages/KeywordAnalyzerTab';
 import { ThemeProvider } from './lib/ThemeContext';
 import { getAllProfiles, getPostsWithDetails, subscribeToPosts, subscribeToProfiles, getBadges, getMemberBadges, getPollsWithDetails, getJobPostings } from './lib/dataService';
-import { HomeIcon, UsersIcon, ChartIcon, WifiOffIcon, LoaderIcon, NoteIcon, BellIcon, FolderIcon, GlobeIcon, VideoIcon, TrophyIcon, BriefcaseIcon, SearchIcon, NewsIcon, TagIcon } from './components/Icons';
+import { HomeIcon, UsersIcon, ChartIcon, WifiOffIcon, LoaderIcon, NoteIcon, BellIcon, FolderIcon, GlobeIcon, VideoIcon, TrophyIcon, BriefcaseIcon, SearchIcon, NewsIcon } from './components/Icons';
 import GlobalSearchModal from './components/GlobalSearchModal';
 
 // SettingsIcon inline যোগ করা হলো
@@ -71,12 +70,10 @@ function AppShell() {
     const unsubProfiles = subscribeToProfiles(() => loadData());
 
     // Safety-net: realtime মাঝে মাঝে miss করতে পারে (tab background এ থাকলে,
-    // বা connection blip হলে) — তাই প্রতি ৩০ সেকেন্ডে একবার lightweight refresh
-    // (আগে এটা ৫০০ মিলিসেকেন্ড ছিল — অর্থাৎ প্রতি সেকেন্ডে ২ বার করে সব ডেটা রিফেচ হচ্ছিল,
-    // যা কম শক্তিশালী ফোনে UI ফ্রিজ/সাদা স্ক্রিন এবং ব্যাটারি ড্রেইনের কারণ হতে পারত)
+    // বা connection blip হলে) — তাই প্রতি ০.৫ সেকেন্ডে একবার lightweight refresh
     const fallbackInterval = setInterval(() => {
       if (document.visibilityState === 'visible') loadData();
-    }, 30000);
+    }, 500);
 
     // Tab আবার visible হলে সাথে সাথে একবার refresh করা (background থেকে ফেরার পর)
     function handleVisibility() {
@@ -157,7 +154,6 @@ function AppShell() {
 
   const tabs = [
     { key: 'feed', label: 'ফিড', icon: HomeIcon },
-    { key: 'keywords', label: 'কিওয়ার্ড', icon: TagIcon },
     { key: 'news', label: 'নিউজ', icon: NewsIcon },
     { key: 'members', label: 'সদস্য', icon: UsersIcon },
     { key: 'leaderboard', label: 'স্বীকৃতি', icon: TrophyIcon },
@@ -246,8 +242,6 @@ function AppShell() {
           <WebsitesTab />
         ) : tab === 'documents' ? (
           <DocumentsTab currentUser={profile} />
-        ) : tab === 'keywords' ? (
-          <KeywordAnalyzerTab currentUser={profile} />
         ) : tab === 'meeting' ? (
           <MeetingTab currentUser={profile} members={members} />
         ) : tab === 'settings' ? (
