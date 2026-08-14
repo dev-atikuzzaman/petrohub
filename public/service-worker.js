@@ -1,6 +1,6 @@
 // public/service-worker.js
 
-const CACHE_NAME = 'petro-hub-v14';
+const CACHE_NAME = 'petro-hub-v15';
 const urlsToCache = [
   '/',
   '/index.html',
