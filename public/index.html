@@ -17,9 +17,32 @@
     <noscript>আপনার ব্রাউজারে JavaScript চালু করতে হবে এই অ্যাপ ব্যবহার করতে।</noscript>
     <div id="root"></div>
     <script>
-      // ফলব্যাক সেফটি-নেট: React কোনো কারণে rootElement-এ কিছুই রেন্ডার করতে না পারলে
-      // (module-level crash, script লোড ব্যর্থ, ইত্যাদি — যেগুলো ErrorBoundary ধরতে পারে না)
-      // ৪ সেকেন্ড পর চেক করে খালি সাদা স্ক্রিনের বদলে একটা বোঝা যায় এমন মেসেজ দেখানো হয়।
+      // ১) Service Worker রেজিস্ট্রেশন এখন এখানে, index.js bundle-এর ওপর নির্ভর না করে —
+      // কারণ bundle-এর ভেতরের কোনো module (যেমন supabaseClient) যদি লোড হওয়ার সময়
+      // crash করে, তাহলে index.js-এর ভেতরের SW-registration কোডও কখনো চলে না।
+      // ফলে Service Worker কখনো active হয় না, আর Chrome তখন পূর্ণাঙ্গ "Install app"
+      // এর বদলে শুধু "Add shortcut" অপশন দেখায় (PWA installability criteria পূরণ হয় না)।
+      // এটা এখানে সরিয়ে আনায় অ্যাপ crash করলেও PWA install ঠিক থাকবে।
+      if ('serviceWorker' in navigator) {
+        window.addEventListener('load', function () {
+          navigator.serviceWorker.register('/service-worker.js')
+            .then(function () { console.log('✅ PWA Service Worker registered'); })
+            .catch(function (err) { console.log('⚠️ Service Worker registration failed:', err); });
+        });
+      }
+
+      // ২) যেকোনো fatal JS error (module-load crash সহ) ধরে রাখা হচ্ছে,
+      // যাতে ফলব্যাক মেসেজে আসল কারণটা দেখানো যায় — অনুমান না করে।
+      var __fatalError = null;
+      window.addEventListener('error', function (e) {
+        if (!__fatalError) __fatalError = (e && e.error && e.error.message) || e.message || String(e);
+      });
+      window.addEventListener('unhandledrejection', function (e) {
+        if (!__fatalError) __fatalError = (e && e.reason && e.reason.message) || String(e && e.reason);
+      });
+
+      // ৩) ৪ সেকেন্ড পর root খালি থেকে গেলে (React কিছুই render করতে পারেনি),
+      // সাদা স্ক্রিনের বদলে exact error message-সহ একটা readable পেজ দেখানো হয়।
       setTimeout(function () {
         var root = document.getElementById('root');
         if (root && root.children.length === 0) {
@@ -32,6 +55,7 @@
             'ইন্টারনেট সংযোগ বা ক্যাশ-এ সমস্যা থাকতে পারে। নিচের বাটনে চাপ দিয়ে ক্যাশ পরিষ্কার করে আবার চেষ্টা করুন।</p>' +
             '<button onclick="if(\'caches\' in window){caches.keys().then(function(n){n.forEach(function(k){caches.delete(k)})})}; if(\'serviceWorker\' in navigator){navigator.serviceWorker.getRegistrations().then(function(r){r.forEach(function(x){x.unregister()})})}; location.reload(true);" ' +
             'style="padding:12px 24px;border-radius:12px;border:none;background:#1e3a5f;color:#fff;font-weight:700;font-size:14px;">আবার চেষ্টা করুন</button>' +
+            (__fatalError ? '<pre style="margin-top:20px;font-size:11px;color:#94a3b8;max-width:320px;white-space:pre-wrap;text-align:left;">' + __fatalError.replace(/</g, '&lt;') + '</pre>' : '') +
             '</div>';
         }
       }, 4000);
