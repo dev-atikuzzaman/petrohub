@@ -2,6 +2,12 @@
   "functions": {
     "api/news.js": {
       "maxDuration": 30
+    },
+    "api/claude.js": {
+      "maxDuration": 60
+    },
+    "api/anthropic.js": {
+      "maxDuration": 60
     }
   }
 }
