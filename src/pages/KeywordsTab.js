@@ -14,6 +14,32 @@ function fileToBase64(file) {
   });
 }
 
+// বড় ছবি (ফোনের ক্যামেরা থেকে সাধারণত ৪-১২MB) resize করে base64 বানানো —
+// Claude-র প্রতি-ছবি সাইজ লিমিট ও Vercel-এর body সাইজ লিমিট মাথায় রেখে
+function resizeImageToBase64(file, maxWidth = 1600, quality = 0.82) {
+  return new Promise((resolve, reject) => {
+    const url = URL.createObjectURL(file);
+    const img = new Image();
+    img.onload = () => {
+      let { width, height } = img;
+      if (width > maxWidth) {
+        height = Math.round((height * maxWidth) / width);
+        width = maxWidth;
+      }
+      const canvas = document.createElement('canvas');
+      canvas.width = width;
+      canvas.height = height;
+      const ctx = canvas.getContext('2d');
+      ctx.drawImage(img, 0, 0, width, height);
+      const dataUrl = canvas.toDataURL('image/jpeg', quality);
+      URL.revokeObjectURL(url);
+      resolve(dataUrl.split(',')[1]);
+    };
+    img.onerror = () => reject(new Error('ছবি লোড ব্যর্থ'));
+    img.src = url;
+  });
+}
+
 function isImageType(mime) {
   return ['image/jpeg', 'image/png', 'image/gif', 'image/webp'].includes(mime);
 }
@@ -99,23 +125,49 @@ async function extractKeywordsFromClaude({ text, imageBase64, imageMime, pdfBase
     });
   }
 
-  const res = await fetch('https://api.anthropic.com/v1/messages', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({
-      model: 'claude-sonnet-4-6',
-      max_tokens: 8000,
-      system: buildSystemPrompt(),
-      messages: [{ role: 'user', content: contentParts }],
-    }),
-  });
-
-  if (!res.ok) {
-    const err = await res.json().catch(() => ({}));
-    throw new Error(err?.error?.message || `API error ${res.status}`);
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), 65000);
+  let res;
+  try {
+    res = await fetch('/api/anthropic', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        model: 'claude-sonnet-4-6',
+        max_tokens: 8000,
+        system: buildSystemPrompt(),
+        messages: [{ role: 'user', content: contentParts }],
+      }),
+      signal: controller.signal,
+    });
+  } catch (fetchErr) {
+    if (fetchErr.name === 'AbortError') {
+      throw new Error('বিশ্লেষণ করতে অনেক সময় লাগছে (৬৫ সেকেন্ডের বেশি)। ছোট ফাইল দিয়ে বা আবার চেষ্টা করুন।');
+    }
+    throw new Error('নেটওয়ার্ক সমস্যা — ইন্টারনেট সংযোগ চেক করুন।');
+  } finally {
+    clearTimeout(timeoutId);
   }
 
-  const data = await res.json();
+  const rawBody = await res.text();
+
+  if (!res.ok) {
+    let msg = '';
+    try {
+      const err = JSON.parse(rawBody);
+      msg = (typeof err.error === 'string' && err.error) || err.error?.message || '';
+    } catch {
+      // JSON না — Vercel/Anthropic-এর নিজস্ব timeout বা এরর পেজ হতে পারে
+    }
+    throw new Error(msg || `API error ${res.status}`);
+  }
+
+  let data;
+  try {
+    data = JSON.parse(rawBody);
+  } catch {
+    throw new Error('সার্ভার থেকে অপ্রত্যাশিত জবাব পাওয়া গেছে। আবার চেষ্টা করুন।');
+  }
   const raw = data.content?.map(b => b.text || '').join('');
 
   // Strip any accidental markdown fences
@@ -227,6 +279,10 @@ export default function KeywordsTab() {
       setError('সাপোর্টেড ফরম্যাট: ছবি (JPG/PNG/GIF/WEBP), PDF, টেক্সট ফাইল');
       return;
     }
+    if (f.size > 15 * 1024 * 1024) {
+      setError('ফাইল ১৫MB-র চেয়ে ছোট হতে হবে।');
+      return;
+    }
     setFile(f);
     setError(null);
   }, []);
@@ -259,8 +315,8 @@ export default function KeywordsTab() {
         payload.text = text.trim();
       } else if (file) {
         if (isImageType(file.type)) {
-          payload.imageBase64 = await fileToBase64(file);
-          payload.imageMime = file.type;
+          payload.imageBase64 = await resizeImageToBase64(file);
+          payload.imageMime = 'image/jpeg';
         } else if (isPdfType(file.type)) {
           payload.pdfBase64 = await fileToBase64(file);
         } else {

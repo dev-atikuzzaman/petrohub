@@ -110,6 +110,7 @@ async function analyzeWithGemini(file) {
       "meaning": "অর্থ - বাংলায় সরল অর্থ",
       "example": "উদাহরণ - বাস্তব প্রয়োগের উদাহরণ",
       "applications": "প্রয়োগক্ষেত্র - কোথায় কোথায় ব্যবহৃত হয়",
+      "importance": "প্রয়োজনীয়তা - কেন এটি গুরুত্বপূর্ণ/প্রয়োজনীয়",
       "benefits": "উপকারিতা - এই বিষয়টির সুবিধা",
       "drawbacks": "অপকারিতা বা সীমাবদ্ধতা - এই বিষয়টির অসুবিধা",
       "usage": "ব্যবহার - কীভাবে ব্যবহার করা হয়",
@@ -165,24 +166,54 @@ async function analyzeWithGemini(file) {
     }];
   }
 
-  const response = await fetch('/api/claude', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({
-      model: 'gemini-2.5-flash',
-      max_tokens: 4000,
-      system: systemPrompt,
-      messages,
-    }),
-  });
-
-  if (!response.ok) {
-    const err = await response.json().catch(() => ({}));
-    const msg = err.error || err.error?.message || JSON.stringify(err);
-    throw new Error(typeof msg === 'string' ? msg : JSON.stringify(msg));
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), 65000);
+  let response;
+  try {
+    response = await fetch('/api/claude', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        model: 'gemini-2.5-flash',
+        max_tokens: 4000,
+        system: systemPrompt,
+        messages,
+      }),
+      signal: controller.signal,
+    });
+  } catch (fetchErr) {
+    if (fetchErr.name === 'AbortError') {
+      throw new Error('বিশ্লেষণ করতে অনেক সময় লাগছে (৬৫ সেকেন্ডের বেশি)। ছোট ফাইল দিয়ে বা আবার চেষ্টা করুন।');
+    }
+    throw new Error('নেটওয়ার্ক সমস্যা — ইন্টারনেট সংযোগ চেক করুন।');
+  } finally {
+    clearTimeout(timeoutId);
   }
 
-  const data = await response.json();
+  const rawBody = await response.text();
+
+  if (!response.ok) {
+    // সার্ভার JSON এরর দিয়েছে কিনা চেষ্টা করে দেখা — না দিলে raw status/text দেখানো,
+    // যাতে কখনোই খালি "{}" জাতীয় অস্পষ্ট এরর না দেখায়
+    let msg = '';
+    try {
+      const err = JSON.parse(rawBody);
+      msg = (typeof err.error === 'string' && err.error) || err.error?.message || '';
+    } catch {
+      // rawBody JSON না — সম্ভবত Vercel/Gemini-র নিজস্ব timeout বা এরর পেজ
+    }
+    if (!msg) {
+      msg = `সার্ভার এরর (কোড ${response.status})${response.status === 504 || response.status === 502 ? ' — অনুরোধটি অনেক সময় নিয়েছে, ছোট ফাইল দিয়ে আবার চেষ্টা করুন' : ''}`;
+    }
+    throw new Error(msg);
+  }
+
+  let data;
+  try {
+    data = JSON.parse(rawBody);
+  } catch {
+    throw new Error('সার্ভার থেকে অপ্রত্যাশিত জবাব পাওয়া গেছে। আবার চেষ্টা করুন।');
+  }
   const rawText = data.content.map(b => b.text || '').join('');
   const clean = rawText.replace(/```json|```/g, '').trim();
 
@@ -216,6 +247,7 @@ function buildShareText(result) {
     lines.push(`📖 সংজ্ঞা: ${kw.definition}`);
     lines.push(`💡 উদাহরণ: ${kw.example}`);
     lines.push(`🎯 প্রয়োগক্ষেত্র: ${kw.applications}`);
+    lines.push(`⭐ প্রয়োজনীয়তা: ${kw.importance}`);
     lines.push(`✅ উপকারিতা: ${kw.benefits}`);
     lines.push(`⚠️ অপকারিতা: ${kw.drawbacks}`);
     lines.push(`🔧 ব্যবহার: ${kw.usage}`);
@@ -567,6 +599,7 @@ export default function KeywordAnalyzerTab() {
                         { icon: '📖', label: 'সংজ্ঞা', value: kw.definition },
                         { icon: '💡', label: 'উদাহরণ', value: kw.example },
                         { icon: '🎯', label: 'প্রয়োগক্ষেত্র', value: kw.applications },
+                        { icon: '⭐', label: 'প্রয়োজনীয়তা', value: kw.importance },
                         { icon: '✅', label: 'উপকারিতা', value: kw.benefits },
                         { icon: '⚠️', label: 'অপকারিতা', value: kw.drawbacks },
                         { icon: '🔧', label: 'ব্যবহার', value: kw.usage },
@@ -599,6 +632,7 @@ export default function KeywordAnalyzerTab() {
                             `📖 সংজ্ঞা: ${kw.definition}`,
                             `💡 উদাহরণ: ${kw.example}`,
                             `🎯 প্রয়োগক্ষেত্র: ${kw.applications}`,
+                            `⭐ প্রয়োজনীয়তা: ${kw.importance}`,
                             `✅ উপকারিতা: ${kw.benefits}`,
                             `⚠️ অপকারিতা: ${kw.drawbacks}`,
                             `🔧 ব্যবহার: ${kw.usage}`,
