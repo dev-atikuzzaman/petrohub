@@ -68,11 +68,24 @@ export default async function handler(req, res) {
     const modelName = 'gemini-2.5-flash'; // gemini-2.0-flash বন্ধ হয়ে গেছে (retired), তাই আপডেট করা হলো
     const url = `https://generativelanguage.googleapis.com/v1beta/models/${modelName}:generateContent?key=${apiKey}`;
 
-    const response = await fetch(url, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(geminiBody),
-    });
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 55000); // ফাংশনের 60s লিমিটের আগেই safely বেরিয়ে যাওয়া
+    let response;
+    try {
+      response = await fetch(url, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(geminiBody),
+        signal: controller.signal,
+      });
+    } catch (fetchErr) {
+      if (fetchErr.name === 'AbortError') {
+        return res.status(504).json({ error: 'Gemini অনেক সময় নিচ্ছে (৫৫ সেকেন্ডের বেশি)। ফাইলটি ছোট করে বা পরে আবার চেষ্টা করুন।' });
+      }
+      throw fetchErr;
+    } finally {
+      clearTimeout(timeoutId);
+    }
 
     const data = await response.json();
 
