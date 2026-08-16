@@ -23,11 +23,14 @@ import MeetingTab from './pages/MeetingTab';
 import KeywordsTab from './pages/KeywordsTab';
 import { ThemeProvider } from './lib/ThemeContext';
 import { getAllProfiles, getPostsWithDetails, subscribeToPosts, subscribeToProfiles, getBadges, getMemberBadges, getPollsWithDetails, getJobPostings } from './lib/dataService';
-import { HomeIcon, UsersIcon, ChartIcon, WifiOffIcon, LoaderIcon, NoteIcon, BellIcon, FolderIcon, GlobeIcon, VideoIcon, TrophyIcon, BriefcaseIcon, SearchIcon, NewsIcon, TagIcon } from './components/Icons';
+import { HomeIcon, UsersIcon, ChartIcon, WifiOffIcon, LoaderIcon, NoteIcon, BellIcon, FolderIcon, GlobeIcon, VideoIcon, TrophyIcon, BriefcaseIcon, SearchIcon, NewsIcon, TagIcon, GraduationIcon } from './components/Icons';
 import GlobalSearchModal from './components/GlobalSearchModal';
 
 // SettingsIcon inline যোগ করা হলো
 const SettingsIcon = (p) => <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...p}><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>;
+
+// টুলস গ্রুপের জন্য ইনলাইন WrenchIcon
+const WrenchIcon = (p) => <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...p}><path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"/></svg>;
 
 function AppShell() {
   const { profile, user, signOut, isAdmin, isApproved, loading: authLoading, passwordRecovery } = useAuth();
@@ -153,21 +156,48 @@ function AppShell() {
     );
   }
 
-  const tabs = [
+  const NAV_GROUPS = [
     { key: 'feed', label: 'ফিড', icon: HomeIcon },
-    { key: 'news', label: 'নিউজ', icon: NewsIcon },
-    { key: 'keywords', label: 'কীওয়ার্ড', icon: TagIcon },
-    { key: 'members', label: 'সদস্য', icon: UsersIcon },
-    { key: 'leaderboard', label: 'স্বীকৃতি', icon: TrophyIcon },
-    { key: 'jobs', label: 'সুযোগ', icon: BriefcaseIcon },
+    {
+      key: 'knowledge', label: 'নলেজ হাব', icon: GraduationIcon,
+      children: [
+        { key: 'keywords', label: 'কীওয়ার্ড', icon: TagIcon },
+        { key: 'news', label: 'নিউজ', icon: NewsIcon },
+        { key: 'websites', label: 'ওয়েবসাইট', icon: GlobeIcon },
+        { key: 'documents', label: 'ডকুমেন্ট', icon: FolderIcon },
+        { key: 'notes', label: 'নোট', icon: NoteIcon },
+      ],
+    },
+    {
+      key: 'community', label: 'কমিউনিটি', icon: UsersIcon,
+      children: [
+        { key: 'members', label: 'সদস্য', icon: UsersIcon },
+        { key: 'leaderboard', label: 'স্বীকৃতি', icon: TrophyIcon },
+        { key: 'jobs', label: 'সুযোগ', icon: BriefcaseIcon },
+      ],
+    },
+    {
+      key: 'tools', label: 'টুলস', icon: WrenchIcon,
+      children: [
+        { key: 'meeting', label: 'মিটিং', icon: VideoIcon },
+        { key: 'stats', label: 'পরিসংখ্যান', icon: ChartIcon },
+      ],
+    },
     { key: 'updates', label: 'আপডেট', icon: BellIcon },
-    { key: 'notes', label: 'নোট', icon: NoteIcon },
-    { key: 'websites', label: 'ওয়েবসাইট', icon: GlobeIcon },
-    { key: 'documents', label: 'ডকুমেন্ট', icon: FolderIcon },
-    { key: 'meeting', label: 'মিটিং', icon: VideoIcon },
-    { key: 'stats', label: 'পরিসংখ্যান', icon: ChartIcon },
     { key: 'settings', label: 'সেটিংস', icon: SettingsIcon },
   ];
+
+  // বর্তমান leaf ট্যাব (tab) থেকে কোন গ্রুপে আছি সেটা বের করা — আলাদা state না রেখে
+  // derive করলে GlobalSearchModal সরাসরি leaf tab-এ নেভিগেট করলেও গ্রুপ হাইলাইট ঠিক থাকে
+  const activeGroup = NAV_GROUPS.find((g) => (g.children ? g.children.some((c) => c.key === tab) : g.key === tab)) || NAV_GROUPS[0];
+
+  function handleGroupClick(group) {
+    if (!group.children) {
+      setTab(group.key);
+    } else if (!group.children.some((c) => c.key === tab)) {
+      setTab(group.children[0].key);
+    }
+  }
 
   return (
     <div style={{ minHeight: '100vh', background: 'var(--bg-base)', fontFamily: 'inherit', transition: 'background 0.2s ease' }}>
@@ -210,6 +240,32 @@ function AppShell() {
 
       <DateTimeBar />
       <Marquee />
+
+      {activeGroup.children && (
+        <div style={{
+          display: 'flex', gap: 6, overflowX: 'auto', scrollbarWidth: 'none',
+          padding: '10px 14px', background: 'var(--bg-surface-alt)',
+          borderBottom: '1px solid var(--border)',
+        }}>
+          {activeGroup.children.map(({ key, label, icon: Icon }) => (
+            <button
+              key={key}
+              onClick={() => setTab(key)}
+              style={{
+                display: 'flex', alignItems: 'center', gap: 6, flexShrink: 0,
+                background: tab === key ? 'var(--accent)' : 'var(--bg-surface)',
+                border: `1px solid ${tab === key ? 'var(--accent)' : 'var(--border)'}`,
+                borderRadius: 20, padding: '7px 14px', cursor: 'pointer',
+                color: tab === key ? '#ffffff' : 'var(--text-secondary)',
+                fontSize: 12.5, fontWeight: 700, whiteSpace: 'nowrap',
+              }}
+            >
+              <Icon width={14} height={14} />
+              {label}
+            </button>
+          ))}
+        </div>
+      )}
 
       <main>
         {dataLoading ? (
@@ -268,22 +324,26 @@ function AppShell() {
         overflowX: 'auto', overflowY: 'hidden',
       }}>
         <div style={{ display: 'flex', minWidth: 'max-content', padding: '0 4px' }}>
-          {tabs.map(({ key, label, icon: Icon }) => (
-            <button
-              key={key}
-              onClick={() => setTab(key)}
-              style={{
-                display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 2,
-                background: tab === key ? 'var(--accent-soft)' : 'none',
-                border: 'none', cursor: 'pointer', padding: '6px 10px', borderRadius: 12,
-                color: tab === key ? 'var(--accent)' : 'var(--text-muted)',
-                minWidth: 56, flexShrink: 0,
-              }}
-            >
-              <Icon width={20} height={20} />
-              <span style={{ fontSize: 10.5, fontWeight: 700, whiteSpace: 'nowrap' }}>{label}</span>
-            </button>
-          ))}
+          {NAV_GROUPS.map((group) => {
+            const { key, label, icon: Icon } = group;
+            const isActive = activeGroup.key === key;
+            return (
+              <button
+                key={key}
+                onClick={() => handleGroupClick(group)}
+                style={{
+                  display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 2,
+                  background: isActive ? 'var(--accent-soft)' : 'none',
+                  border: 'none', cursor: 'pointer', padding: '6px 10px', borderRadius: 12,
+                  color: isActive ? 'var(--accent)' : 'var(--text-muted)',
+                  minWidth: 60, flexShrink: 0,
+                }}
+              >
+                <Icon width={20} height={20} />
+                <span style={{ fontSize: 10.5, fontWeight: 700, whiteSpace: 'nowrap' }}>{label}</span>
+              </button>
+            );
+          })}
         </div>
       </nav>
 
