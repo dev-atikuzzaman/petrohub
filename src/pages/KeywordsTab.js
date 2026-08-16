@@ -247,7 +247,7 @@ function TermDetail({ term }) {
     <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
       {/* হেডার — সেন্টার-অ্যালাইনড */}
       <div style={{ textAlign: 'center', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 6 }}>
-        <h2 style={{ margin: 0, fontSize: 22, fontWeight: 900, color: 'var(--text-primary)' }}>
+        <h2 style={{ margin: 0, fontSize: 27, fontWeight: 900, color: 'var(--text-primary)' }}>
           {term.term}
         </h2>
         <span style={{
@@ -276,7 +276,7 @@ function TermDetail({ term }) {
                 display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 3,
                 borderBottom: `3px solid ${isActive ? s.color : 'transparent'}`,
                 color: isActive ? s.color : 'var(--text-secondary)',
-                fontWeight: isActive ? 800 : 600, fontSize: 11,
+                fontWeight: isActive ? 800 : 600, fontSize: 12.5,
                 transition: 'color 0.2s ease, border-color 0.2s ease',
               }}
             >
@@ -293,6 +293,7 @@ function TermDetail({ term }) {
           overflow: 'hidden', borderRadius: 14,
           border: `1.5px solid ${active.color}40`,
           background: `${active.color}0d`,
+          minHeight: 220,
           transition: 'border-color 0.25s ease, background 0.25s ease',
         }}
         onTouchStart={handleTouchStart}
@@ -312,8 +313,8 @@ function TermDetail({ term }) {
               key={s.key}
               style={{
                 width: `${100 / n}%`, flexShrink: 0, boxSizing: 'border-box',
-                padding: '22px 20px', textAlign: 'center',
-                fontSize: 14.5, lineHeight: 1.85, color: 'var(--text-primary)',
+                padding: '30px 24px', textAlign: 'center',
+                fontSize: 17, lineHeight: 1.9, color: 'var(--text-primary)',
               }}
             >
               {term[s.key] || '—'}
@@ -644,15 +645,23 @@ export default function KeywordsTab() {
             />
           </div>
 
-          {/* Two-column layout: list + detail */}
-          <div style={{ display: 'flex', gap: 14, alignItems: 'flex-start' }}>
-
-            {/* Term list */}
-            <div style={{
-              width: 200, flexShrink: 0, display: 'flex', flexDirection: 'column', gap: 6,
-              maxHeight: 600, overflowY: 'auto',
-              scrollbarWidth: 'thin',
-            }}>
+          {/* মোবাইলে ফুল-উইথ সিঙ্গেল-ভিউ: টার্ম সিলেক্ট না করা পর্যন্ত লিস্ট, সিলেক্ট করলে ডিটেইল ফুল স্ক্রিন */}
+          {selectedTerm ? (
+            <div>
+              <button
+                onClick={() => setSelectedTerm(null)}
+                style={{
+                  display: 'flex', alignItems: 'center', gap: 6, marginBottom: 14,
+                  background: 'transparent', border: 'none', cursor: 'pointer',
+                  color: 'var(--text-secondary)', fontSize: 13, fontWeight: 700, padding: 0,
+                }}
+              >
+                ← সব টার্ম
+              </button>
+              <TermDetail term={selectedTerm} />
+            </div>
+          ) : (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
               {filteredTerms.length === 0 ? (
                 <div style={{ color: 'var(--text-muted)', fontSize: 13, padding: '12px 0' }}>
                   কোনো টার্ম পাওয়া যায়নি
@@ -661,30 +670,12 @@ export default function KeywordsTab() {
                 <TermCard
                   key={i}
                   term={t}
-                  isSelected={selectedTerm?.term === t.term}
+                  isSelected={false}
                   onClick={() => setSelectedTerm(t)}
                 />
               ))}
             </div>
-
-            {/* Detail panel */}
-            <div style={{
-              flex: 1, minWidth: 0, maxHeight: 600, overflowY: 'auto',
-              scrollbarWidth: 'thin',
-            }}>
-              {selectedTerm ? (
-                <TermDetail term={selectedTerm} />
-              ) : (
-                <div style={{
-                  display: 'flex', flexDirection: 'column', alignItems: 'center',
-                  justifyContent: 'center', height: 200, color: 'var(--text-muted)', fontSize: 13,
-                }}>
-                  <div style={{ fontSize: 36, marginBottom: 10 }}>👈</div>
-                  বাম থেকে একটি টার্ম সিলেক্ট করুন
-                </div>
-              )}
-            </div>
-          </div>
+          )}
 
         </div>
       )}
