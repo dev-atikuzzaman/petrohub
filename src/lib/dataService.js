@@ -224,7 +224,9 @@ export async function toggleCommentReaction(commentId, userId, emoji) {
 // দেরি করায়। একটা channel এ সব একসাথে রাখলে handshake একবারই হয়।
 export function subscribeToAppChanges(onChange) {
   const wrappedOnChange = (payload) => {
-    console.log('📡 Realtime event:', payload.table, payload.eventType, payload.new || payload.old);
+    if (process.env.NODE_ENV === 'development') {
+      console.log('📡 Realtime event:', payload.table, payload.eventType, payload.new || payload.old);
+    }
     onChange(payload);
   };
 
@@ -244,10 +246,11 @@ export function subscribeToAppChanges(onChange) {
     .on('postgres_changes', { event: '*', schema: 'public', table: 'job_postings' }, wrappedOnChange)
     .on('postgres_changes', { event: '*', schema: 'public', table: 'post_reports' }, wrappedOnChange)
     .subscribe((status) => {
-      if (status === 'SUBSCRIBED') {
+      if (status === 'SUBSCRIBED' && process.env.NODE_ENV === 'development') {
         console.log('✅ Realtime channel connected (posts + profiles)');
       }
       if (status === 'CHANNEL_ERROR' || status === 'TIMED_OUT' || status === 'CLOSED') {
+        // এই warning production-এও রাখা হলো, কারণ connection সমস্যা ডিবাগ করতে কাজে লাগবে
         console.warn('⚠️ Realtime channel status:', status);
       }
     });
