@@ -156,6 +156,7 @@ function AppShell() {
   const tabs = [
     { key: 'feed', label: 'ফিড', icon: HomeIcon },
     { key: 'news', label: 'নিউজ', icon: NewsIcon },
+    { key: 'keywords', label: 'কীওয়ার্ড', icon: TagIcon },
     { key: 'members', label: 'সদস্য', icon: UsersIcon },
     { key: 'leaderboard', label: 'স্বীকৃতি', icon: TrophyIcon },
     { key: 'jobs', label: 'সুযোগ', icon: BriefcaseIcon },
@@ -164,7 +165,6 @@ function AppShell() {
     { key: 'websites', label: 'ওয়েবসাইট', icon: GlobeIcon },
     { key: 'documents', label: 'ডকুমেন্ট', icon: FolderIcon },
     { key: 'meeting', label: 'মিটিং', icon: VideoIcon },
-    { key: 'keywords', label: 'কীওয়ার্ড', icon: TagIcon },
     { key: 'stats', label: 'পরিসংখ্যান', icon: ChartIcon },
     { key: 'settings', label: 'সেটিংস', icon: SettingsIcon },
   ];
