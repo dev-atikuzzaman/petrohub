@@ -65,7 +65,7 @@ export default async function handler(req, res) {
       },
     };
 
-    const modelName = 'gemini-2.5-flash'; // gemini-2.0-flash বন্ধ হয়ে গেছে (retired), তাই আপডেট করা হলো
+    const modelName = 'gemini-flash-latest'; // Google-এর অফিসিয়াল "latest" alias — নতুন ভার্সন এলে অটো আপডেট হয়, তাই ভবিষ্যতে model বন্ধ হয়ে যাওয়ার সমস্যা এড়ানো যায়
     const url = `https://generativelanguage.googleapis.com/v1beta/models/${modelName}:generateContent?key=${apiKey}`;
 
     const controller = new AbortController();
