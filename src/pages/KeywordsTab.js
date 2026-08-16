@@ -210,9 +210,43 @@ function TermCard({ term, isSelected, onClick }) {
 }
 
 function TermDetail({ term }) {
+  const [activeIdx, setActiveIdx] = useState(0);
+  const touchStartX = useRef(null);
+  const touchDeltaX = useRef(0);
+  const n = SECTION_META.length;
+  const active = SECTION_META[activeIdx];
+
+  // term বদলালে সবসময় প্রথম ট্যাব থেকে শুরু
+  const termKey = term.term;
+  const prevTermKey = useRef(termKey);
+  if (prevTermKey.current !== termKey) {
+    prevTermKey.current = termKey;
+    if (activeIdx !== 0) setActiveIdx(0);
+  }
+
+  function goTo(i) {
+    setActiveIdx(Math.max(0, Math.min(n - 1, i)));
+  }
+  function handleTouchStart(e) {
+    touchStartX.current = e.touches[0].clientX;
+    touchDeltaX.current = 0;
+  }
+  function handleTouchMove(e) {
+    if (touchStartX.current == null) return;
+    touchDeltaX.current = e.touches[0].clientX - touchStartX.current;
+  }
+  function handleTouchEnd() {
+    if (Math.abs(touchDeltaX.current) > 45) {
+      goTo(activeIdx + (touchDeltaX.current < 0 ? 1 : -1));
+    }
+    touchStartX.current = null;
+    touchDeltaX.current = 0;
+  }
+
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-      <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
+      {/* হেডার — সেন্টার-অ্যালাইনড */}
+      <div style={{ textAlign: 'center', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 6 }}>
         <h2 style={{ margin: 0, fontSize: 22, fontWeight: 900, color: 'var(--text-primary)' }}>
           {term.term}
         </h2>
@@ -225,41 +259,84 @@ function TermDetail({ term }) {
         </span>
       </div>
 
-      {SECTION_META.map(({ key, label, emoji, color }) => (
-        <div key={key} style={{
-          background: 'var(--bg-surface)', borderRadius: 14,
-          border: `1.5px solid ${color}40`, overflow: 'hidden',
-        }}>
-          <div style={{
-            padding: '10px 14px',
-            background: `${color}1f`,
-            borderBottom: `1px solid ${color}33`,
-            fontSize: 12.5, fontWeight: 800, color,
-            display: 'flex', alignItems: 'center', gap: 8,
-          }}>
-            <span style={{
-              width: 24, height: 24, borderRadius: 8,
-              background: `${color}2b`, border: `1px solid ${color}55`,
-              display: 'flex', alignItems: 'center', justifyContent: 'center',
-              fontSize: 13, flexShrink: 0,
-            }}>
-              {emoji}
-            </span>
-            {label}
-          </div>
-          <div style={{
-            fontSize: 14, lineHeight: 1.75,
-            color: 'var(--text-primary)',
-            borderLeft: `3px solid ${color}`,
-            margin: '10px 12px 12px',
-            padding: '10px 12px',
-            background: `${color}0d`,
-            borderRadius: 10,
-          }}>
-            {term[key] || '—'}
-          </div>
+      {/* ট্যাব বার — আইকন উপরে, লেবেল নিচে, সক্রিয়টায় রঙিন আন্ডারলাইন */}
+      <div style={{
+        display: 'flex', borderBottom: '1px solid var(--border)',
+        overflowX: 'auto', scrollbarWidth: 'none',
+      }}>
+        {SECTION_META.map((s, i) => {
+          const isActive = i === activeIdx;
+          return (
+            <button
+              key={s.key}
+              onClick={() => goTo(i)}
+              style={{
+                flex: '1 0 0', minWidth: 66, background: 'transparent', border: 'none',
+                cursor: 'pointer', padding: '8px 4px 10px',
+                display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 3,
+                borderBottom: `3px solid ${isActive ? s.color : 'transparent'}`,
+                color: isActive ? s.color : 'var(--text-secondary)',
+                fontWeight: isActive ? 800 : 600, fontSize: 11,
+                transition: 'color 0.2s ease, border-color 0.2s ease',
+              }}
+            >
+              <span style={{ fontSize: 17 }}>{s.emoji}</span>
+              <span style={{ whiteSpace: 'nowrap' }}>{s.label}</span>
+            </button>
+          );
+        })}
+      </div>
+
+      {/* সোয়াইপযোগ্য স্লাইডিং কন্টেন্ট */}
+      <div
+        style={{
+          overflow: 'hidden', borderRadius: 14,
+          border: `1.5px solid ${active.color}40`,
+          background: `${active.color}0d`,
+          transition: 'border-color 0.25s ease, background 0.25s ease',
+        }}
+        onTouchStart={handleTouchStart}
+        onTouchMove={handleTouchMove}
+        onTouchEnd={handleTouchEnd}
+      >
+        <div
+          style={{
+            display: 'flex',
+            width: `${n * 100}%`,
+            transform: `translateX(-${(activeIdx * 100) / n}%)`,
+            transition: 'transform 0.3s ease',
+          }}
+        >
+          {SECTION_META.map((s) => (
+            <div
+              key={s.key}
+              style={{
+                width: `${100 / n}%`, flexShrink: 0, boxSizing: 'border-box',
+                padding: '22px 20px', textAlign: 'center',
+                fontSize: 14.5, lineHeight: 1.85, color: 'var(--text-primary)',
+              }}
+            >
+              {term[s.key] || '—'}
+            </div>
+          ))}
         </div>
-      ))}
+      </div>
+
+      {/* ডট ইন্ডিকেটর — সেন্টারে */}
+      <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', gap: 6 }}>
+        {SECTION_META.map((s, i) => (
+          <button
+            key={s.key}
+            onClick={() => goTo(i)}
+            aria-label={s.label}
+            style={{
+              width: i === activeIdx ? 18 : 6, height: 6, borderRadius: 3, padding: 0, border: 'none',
+              background: i === activeIdx ? s.color : 'var(--border)',
+              cursor: 'pointer', transition: 'all 0.25s ease',
+            }}
+          />
+        ))}
+      </div>
     </div>
   );
 }
