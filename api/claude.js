@@ -65,37 +65,81 @@ export default async function handler(req, res) {
       },
     };
 
-    const modelName = 'gemini-flash-latest'; // Google-এর অফিসিয়াল "latest" alias — নতুন ভার্সন এলে অটো আপডেট হয়, তাই ভবিষ্যতে model বন্ধ হয়ে যাওয়ার সমস্যা এড়ানো যায়
-    const url = `https://generativelanguage.googleapis.com/v1beta/models/${modelName}:generateContent?key=${apiKey}`;
+    // মডেল অগ্রাধিকার: lite মডেল হালকা, তাই ফ্রি-টিয়ারে কম busy/rate-limit হয় —
+    // সেটা দিয়ে আগে চেষ্টা, ব্যর্থ হলে regular flash দিয়ে fallback
+    const MODEL_CHAIN = ['gemini-flash-lite-latest', 'gemini-flash-latest'];
+    const MAX_RETRIES_PER_MODEL = 2; // busy (503) হলে প্রতি মডেলে সর্বোচ্চ ২ বার
+    const DEADLINE_MS = Date.now() + 50000; // ফাংশনের 60s লিমিটের ভেতরেই safely শেষ করা
 
-    const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 55000); // ফাংশনের 60s লিমিটের আগেই safely বেরিয়ে যাওয়া
-    let response;
-    try {
-      response = await fetch(url, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(geminiBody),
-        signal: controller.signal,
-      });
-    } catch (fetchErr) {
-      if (fetchErr.name === 'AbortError') {
-        return res.status(504).json({ error: 'Gemini অনেক সময় নিচ্ছে (৫৫ সেকেন্ডের বেশি)। ফাইলটি ছোট করে বা পরে আবার চেষ্টা করুন।' });
+    const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
+
+    async function callGemini(modelName) {
+      const url = `https://generativelanguage.googleapis.com/v1beta/models/${modelName}:generateContent?key=${apiKey}`;
+      const controller = new AbortController();
+      const remaining = DEADLINE_MS - Date.now();
+      const timeoutId = setTimeout(() => controller.abort(), Math.max(remaining, 5000));
+      try {
+        const response = await fetch(url, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(geminiBody),
+          signal: controller.signal,
+        });
+        const data = await response.json();
+        return { ok: response.ok, status: response.status, data };
+      } finally {
+        clearTimeout(timeoutId);
       }
-      throw fetchErr;
-    } finally {
-      clearTimeout(timeoutId);
     }
 
-    const data = await response.json();
-
-    if (!response.ok) {
-      const errMsg = data.error?.message || JSON.stringify(data);
-      console.error('Gemini error:', errMsg);
-      return res.status(response.status).json({ error: errMsg });
+    function isBusyError(status, data) {
+      if (status === 503) return true;
+      const msg = (data?.error?.message || '').toLowerCase();
+      return msg.includes('overloaded') || msg.includes('high demand') || msg.includes('unavailable');
     }
 
-    // safety block চেক
+    let result = null;
+    let lastError = null;
+
+    outer:
+    for (const modelName of MODEL_CHAIN) {
+      for (let attempt = 1; attempt <= MAX_RETRIES_PER_MODEL; attempt++) {
+        if (Date.now() >= DEADLINE_MS) break outer;
+
+        let attemptResult;
+        try {
+          attemptResult = await callGemini(modelName);
+        } catch (fetchErr) {
+          if (fetchErr.name === 'AbortError') {
+            return res.status(504).json({ error: 'Gemini অনেক সময় নিচ্ছে। ফাইলটি ছোট করে বা পরে আবার চেষ্টা করুন।' });
+          }
+          lastError = fetchErr.message;
+          continue;
+        }
+
+        if (attemptResult.ok) {
+          result = attemptResult.data;
+          break outer;
+        }
+
+        lastError = attemptResult.data?.error?.message || `Gemini API error ${attemptResult.status}`;
+
+        if (isBusyError(attemptResult.status, attemptResult.data) && Date.now() < DEADLINE_MS) {
+          await sleep(1200 * attempt); // ১.২s, ২.৪s — সাময়িক busy অবস্থা কাটার সময় দেওয়া
+          continue;
+        }
+
+        // busy না হলে (যেমন invalid key, safety block ইত্যাদি) সাথে সাথে fallback মডেলে চলে যাওয়া
+        break;
+      }
+    }
+
+    if (!result) {
+      console.error('Gemini error (all attempts failed):', lastError);
+      return res.status(503).json({ error: lastError || 'Gemini সার্ভার এই মুহূর্তে ব্যস্ত। কিছুক্ষণ পর আবার চেষ্টা করুন।' });
+    }
+
+    const data = result;
     const candidate = data.candidates?.[0];
     if (!candidate) {
       return res.status(500).json({ error: 'Gemini কোনো response দেয়নি। ফাইলটি পরিবর্তন করে আবার চেষ্টা করুন।' });
