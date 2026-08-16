@@ -47,11 +47,11 @@ function AppShell() {
 
   const loadData = useCallback(async () => {
     try {
-      console.log('🔄 loadData called');
+      if (process.env.NODE_ENV === 'development') console.log('🔄 loadData called');
       const [profilesData, postsData, badgesData, memberBadgesData, pollsData, jobsData] = await Promise.all([
         getAllProfiles(), getPostsWithDetails(), getBadges(), getMemberBadges(), getPollsWithDetails(), getJobPostings(),
       ]);
-      console.log('✅ loadData fetched:', postsData.length, 'posts,', profilesData.length, 'profiles');
+      if (process.env.NODE_ENV === 'development') console.log('✅ loadData fetched:', postsData.length, 'posts,', profilesData.length, 'profiles');
       setMembers(profilesData);
       setPosts(postsData);
       setBadges(badgesData);
