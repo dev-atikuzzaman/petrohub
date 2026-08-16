@@ -15,7 +15,7 @@ function fileToBase64(file) {
 }
 
 // বড় ছবি (ফোনের ক্যামেরা থেকে সাধারণত ৪-১২MB) resize করে base64 বানানো —
-// Claude-র প্রতি-ছবি সাইজ লিমিট ও Vercel-এর body সাইজ লিমিট মাথায় রেখে
+// Gemini-র প্রতি-ছবি সাইজ লিমিট ও Vercel-এর body সাইজ লিমিট মাথায় রেখে
 function resizeImageToBase64(file, maxWidth = 1600, quality = 0.82) {
   return new Promise((resolve, reject) => {
     const url = URL.createObjectURL(file);
@@ -64,7 +64,7 @@ const SECTION_META = [
 ];
 
 // ──────────────────────────────────────────────
-//  System prompt for Claude
+//  System prompt for Gemini
 // ──────────────────────────────────────────────
 
 function buildSystemPrompt() {
@@ -103,7 +103,7 @@ Rules:
 //  API call
 // ──────────────────────────────────────────────
 
-async function extractKeywordsFromClaude({ text, imageBase64, imageMime, pdfBase64 }) {
+async function extractKeywordsFromGemini({ text, imageBase64, imageMime, pdfBase64 }) {
   const contentParts = [];
 
   if (imageBase64) {
@@ -129,11 +129,10 @@ async function extractKeywordsFromClaude({ text, imageBase64, imageMime, pdfBase
   const timeoutId = setTimeout(() => controller.abort(), 65000);
   let res;
   try {
-    res = await fetch('/api/anthropic', {
+    res = await fetch('/api/claude', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        model: 'claude-sonnet-4-6',
         max_tokens: 8000,
         system: buildSystemPrompt(),
         messages: [{ role: 'user', content: contentParts }],
@@ -157,7 +156,7 @@ async function extractKeywordsFromClaude({ text, imageBase64, imageMime, pdfBase
       const err = JSON.parse(rawBody);
       msg = (typeof err.error === 'string' && err.error) || err.error?.message || '';
     } catch {
-      // JSON না — Vercel/Anthropic-এর নিজস্ব timeout বা এরর পেজ হতে পারে
+      // JSON না — Vercel/Gemini-এর নিজস্ব timeout বা এরর পেজ হতে পারে
     }
     throw new Error(msg || `API error ${res.status}`);
   }
@@ -326,7 +325,7 @@ export default function KeywordsTab() {
         }
       }
 
-      const result = await extractKeywordsFromClaude(payload);
+      const result = await extractKeywordsFromGemini(payload);
       setTerms(Array.isArray(result) ? result : []);
       if (result.length > 0) setSelectedTerm(result[0]);
     } catch (err) {
