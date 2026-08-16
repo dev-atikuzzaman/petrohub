@@ -2,7 +2,7 @@
 // অ্যাডমিন সরাসরি ইমেইল+পাসওয়ার্ড দিয়ে একজন সদস্যের একাউন্ট বানিয়ে দিতে
 // পারবেন — সদস্যকে নিজে signup করতে হবে না, ইমেইল ভেরিফিকেশনেরও দরকার
 // নেই (email_confirm: true), এবং সরাসরি approved অবস্থায় তৈরি হয়।
-import { getServiceClient, requireAdmin } from './_admin';
+import { getServiceClient, requireAdmin, checkRateLimit } from './_admin';
 
 export default async function handler(req, res) {
   if (req.method !== 'POST') {
@@ -14,6 +14,14 @@ export default async function handler(req, res) {
   const auth = await requireAdmin(req, supabaseAdmin);
   if (auth.error) {
     res.status(auth.status).json({ error: auth.error });
+    return;
+  }
+
+  // একই অ্যাডমিন যাতে মিনিটে অতিরিক্ত (২০টির বেশি) ইউজার তৈরি করতে না পারে —
+  // ভুলবশত স্ক্রিপ্ট লুপ বা compromised token থেকে সুরক্ষা
+  const rl = checkRateLimit(`create-user:${auth.user.id}`, { maxRequests: 20, windowMs: 60_000 });
+  if (!rl.allowed) {
+    res.status(429).json({ error: 'অনেক বেশি অনুরোধ হয়েছে, একটু পর আবার চেষ্টা করুন' });
     return;
   }
 

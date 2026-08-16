@@ -43,3 +43,30 @@ export async function requireAdmin(req, supabaseAdmin) {
 
   return { user: userData.user };
 }
+
+// ============================================================
+// সাধারণ Rate Limiter (in-memory, per-instance)
+// ============================================================
+// সীমাবদ্ধতা: Vercel serverless function প্রতিটা রিকোয়েস্টে নতুন
+// instance-এ চলতে পারে (cold start) অথবা একই warm instance-এ একাধিক
+// রিকোয়েস্ট আসতে পারে — কোনো নিশ্চয়তা নেই। তাই এই in-memory কাউন্টার
+// পুরোপুরি নির্ভরযোগ্য rate-limit না; কেউ চাইলে বারবার cold-start
+// করিয়ে এটা bypass করতে পারবে। কিন্তু এটা তবুও basic abuse (একজন
+// admin token compromised হলে script দিয়ে rapid-fire request) থেকে
+// কিছুটা সুরক্ষা দেয়। প্রোডাকশনে সত্যিকারের নিশ্চয়তার জন্য Upstash
+// Redis / Vercel KV দিয়ে distributed rate-limit বসানো উচিত।
+const rateLimitBuckets = new Map();
+
+export function checkRateLimit(key, { maxRequests = 10, windowMs = 60_000 } = {}) {
+  const now = Date.now();
+  const bucket = rateLimitBuckets.get(key) || [];
+  const recent = bucket.filter((ts) => now - ts < windowMs);
+
+  if (recent.length >= maxRequests) {
+    return { allowed: false, retryAfterMs: windowMs - (now - recent[0]) };
+  }
+
+  recent.push(now);
+  rateLimitBuckets.set(key, recent);
+  return { allowed: true };
+}

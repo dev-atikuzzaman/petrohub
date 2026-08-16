@@ -3,7 +3,7 @@
 // ইমেইল পাঠায় যেখানে লিংকে ক্লিক করে সেই ব্যক্তি নিজেই পাসওয়ার্ড সেট
 // করে একাউন্ট activate করবেন (admin-create-user এর বিপরীত — এখানে
 // পাসওয়ার্ড admin না, ব্যবহারকারী নিজে ঠিক করেন)।
-import { getServiceClient, requireAdmin } from './_admin';
+import { getServiceClient, requireAdmin, checkRateLimit } from './_admin';
 
 export default async function handler(req, res) {
   if (req.method !== 'POST') {
@@ -15,6 +15,13 @@ export default async function handler(req, res) {
   const auth = await requireAdmin(req, supabaseAdmin);
   if (auth.error) {
     res.status(auth.status).json({ error: auth.error });
+    return;
+  }
+
+  // ইমেইল স্প্যাম এড়াতে মিনিটে ২০টার বেশি ইনভাইট পাঠানো আটকানো হচ্ছে
+  const rl = checkRateLimit(`invite-user:${auth.user.id}`, { maxRequests: 20, windowMs: 60_000 });
+  if (!rl.allowed) {
+    res.status(429).json({ error: 'অনেক বেশি অনুরোধ হয়েছে, একটু পর আবার চেষ্টা করুন' });
     return;
   }
 

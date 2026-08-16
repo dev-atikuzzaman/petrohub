@@ -2,7 +2,7 @@
 // অ্যাডমিন সরাসরি কোনো সদস্যের একাউন্ট মুছে দিতে পারবেন — auth.users থেকে
 // ডিলিট হলে profiles টেবিলের row-ও cascade হয়ে স্বয়ংক্রিয়ভাবে মুছে যায়
 // (schema.sql তে "on delete cascade" দেওয়া আছে)।
-import { getServiceClient, requireAdmin } from './_admin';
+import { getServiceClient, requireAdmin, checkRateLimit } from './_admin';
 
 export default async function handler(req, res) {
   if (req.method !== 'POST') {
@@ -14,6 +14,13 @@ export default async function handler(req, res) {
   const auth = await requireAdmin(req, supabaseAdmin);
   if (auth.error) {
     res.status(auth.status).json({ error: auth.error });
+    return;
+  }
+
+  // ডিলিট একটা destructive action — মিনিটে ১০টার বেশি হলে সন্দেহজনক
+  const rl = checkRateLimit(`delete-user:${auth.user.id}`, { maxRequests: 10, windowMs: 60_000 });
+  if (!rl.allowed) {
+    res.status(429).json({ error: 'অনেক বেশি অনুরোধ হয়েছে, একটু পর আবার চেষ্টা করুন' });
     return;
   }
 
