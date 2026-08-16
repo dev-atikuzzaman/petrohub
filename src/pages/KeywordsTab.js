@@ -53,14 +53,14 @@ function isPdfType(mime) {
 // ──────────────────────────────────────────────
 
 const SECTION_META = [
-  { key: 'definition',   label: 'সংজ্ঞা',        emoji: '📖' },
-  { key: 'meaning',      label: 'অর্থ',           emoji: '💡' },
-  { key: 'example',      label: 'উদাহরণ',         emoji: '🔍' },
-  { key: 'application',  label: 'প্রয়োগ',         emoji: '⚙️' },
-  { key: 'importance',   label: 'প্রয়োজনীয়তা',  emoji: '🎯' },
-  { key: 'benefits',     label: 'উপকারিতা',       emoji: '✅' },
-  { key: 'drawbacks',    label: 'অপকারিতা',       emoji: '⚠️' },
-  { key: 'limitations',  label: 'সীমাবদ্ধতা',     emoji: '🚧' },
+  { key: 'definition',   label: 'সংজ্ঞা',        emoji: '📖', color: '#3b82f6' }, // নীল
+  { key: 'meaning',      label: 'অর্থ',           emoji: '💡', color: '#a855f7' }, // বেগুনি
+  { key: 'example',      label: 'উদাহরণ',         emoji: '🔍', color: '#f97316' }, // কমলা
+  { key: 'application',  label: 'প্রয়োগ',         emoji: '⚙️', color: '#06b6d4' }, // সায়ান
+  { key: 'importance',   label: 'প্রয়োজনীয়তা',  emoji: '🎯', color: '#eab308' }, // হলুদ
+  { key: 'benefits',     label: 'উপকারিতা',       emoji: '✅', color: '#22c55e' }, // সবুজ
+  { key: 'drawbacks',    label: 'অপকারিতা',       emoji: '⚠️', color: '#ef4444' }, // লাল
+  { key: 'limitations',  label: 'সীমাবদ্ধতা',     emoji: '🚧', color: '#f59e0b' }, // অ্যাম্বার
 ];
 
 // ──────────────────────────────────────────────
@@ -225,23 +225,36 @@ function TermDetail({ term }) {
         </span>
       </div>
 
-      {SECTION_META.map(({ key, label, emoji }) => (
+      {SECTION_META.map(({ key, label, emoji, color }) => (
         <div key={key} style={{
           background: 'var(--bg-surface)', borderRadius: 14,
-          border: '1px solid var(--border)', overflow: 'hidden',
+          border: `1.5px solid ${color}40`, overflow: 'hidden',
         }}>
           <div style={{
-            padding: '8px 14px',
-            background: 'var(--bg-surface-alt)',
-            borderBottom: '1px solid var(--border)',
-            fontSize: 12, fontWeight: 800, color: 'var(--text-secondary)',
-            display: 'flex', alignItems: 'center', gap: 6,
+            padding: '10px 14px',
+            background: `${color}1f`,
+            borderBottom: `1px solid ${color}33`,
+            fontSize: 12.5, fontWeight: 800, color,
+            display: 'flex', alignItems: 'center', gap: 8,
           }}>
-            <span>{emoji}</span> {label}
+            <span style={{
+              width: 24, height: 24, borderRadius: 8,
+              background: `${color}2b`, border: `1px solid ${color}55`,
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+              fontSize: 13, flexShrink: 0,
+            }}>
+              {emoji}
+            </span>
+            {label}
           </div>
           <div style={{
-            padding: '12px 14px', fontSize: 14, lineHeight: 1.75,
+            fontSize: 14, lineHeight: 1.75,
             color: 'var(--text-primary)',
+            borderLeft: `3px solid ${color}`,
+            margin: '10px 12px 12px',
+            padding: '10px 12px',
+            background: `${color}0d`,
+            borderRadius: 10,
           }}>
             {term[key] || '—'}
           </div>
