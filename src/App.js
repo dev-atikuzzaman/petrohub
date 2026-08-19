@@ -22,9 +22,10 @@ import SettingsTab from './pages/SettingsTab';
 import MeetingTab from './pages/MeetingTab';
 import KeywordsTab from './pages/KeywordsTab';
 import PRLCalculatorTab from './pages/PRLCalculatorTab';
+import GasProductionTab from './pages/GasProductionTab';
 import { ThemeProvider } from './lib/ThemeContext';
 import { getAllProfiles, getPostsWithDetails, subscribeToPosts, subscribeToProfiles, getBadges, getMemberBadges, getPollsWithDetails, getJobPostings } from './lib/dataService';
-import { HomeIcon, UsersIcon, ChartIcon, WifiOffIcon, LoaderIcon, NoteIcon, BellIcon, FolderIcon, GlobeIcon, VideoIcon, TrophyIcon, BriefcaseIcon, SearchIcon, NewsIcon, TagIcon, GraduationIcon, CalendarIcon } from './components/Icons';
+import { HomeIcon, UsersIcon, ChartIcon, WifiOffIcon, LoaderIcon, NoteIcon, BellIcon, FolderIcon, GlobeIcon, VideoIcon, TrophyIcon, BriefcaseIcon, SearchIcon, NewsIcon, TagIcon, GraduationIcon, CalendarIcon, DropletIcon } from './components/Icons';
 import GlobalSearchModal from './components/GlobalSearchModal';
 
 // SettingsIcon inline যোগ করা হলো
@@ -183,6 +184,7 @@ function AppShell() {
         { key: 'meeting', label: 'মিটিং', icon: VideoIcon },
         { key: 'stats', label: 'পরিসংখ্যান', icon: ChartIcon },
         { key: 'prl', label: 'PRL ক্যালকুলেটর', icon: CalendarIcon },
+        { key: 'gas', label: 'গ্যাস প্রোডাকশন', icon: DropletIcon },
       ],
     },
     { key: 'updates', label: 'আপডেট', icon: BellIcon },
@@ -306,6 +308,8 @@ function AppShell() {
           <MeetingTab currentUser={profile} members={members} />
         ) : tab === 'prl' ? (
           <PRLCalculatorTab />
+        ) : tab === 'gas' ? (
+          <GasProductionTab currentUser={profile} isAdmin={isAdmin} />
         ) : tab === 'keywords' ? (
           <KeywordsTab />
         ) : tab === 'settings' ? (
