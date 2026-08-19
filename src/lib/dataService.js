@@ -870,3 +870,35 @@ export async function resolveReport(reportId, status, resolvedBy) {
   if (error) console.error('❌ resolveReport:', error.message);
   return { error };
 }
+
+// ============================================================
+// GAS PRODUCTION (দৈনিক MMCFD — admin এন্ট্রি, সবাই দেখবে)
+// ============================================================
+export async function getGasProduction(limit = 60) {
+  const { data, error } = await supabase
+    .from('gas_production')
+    .select('*, author:profiles!gas_production_created_by_fkey(id, name)')
+    .order('production_date', { ascending: false })
+    .limit(limit);
+  if (error) { console.error('❌ getGasProduction:', error.message); return []; }
+  return data;
+}
+
+// production_date থাকা তারিখে আগে থেকেই এন্ট্রি থাকলে আপডেট হয়ে যাবে (upsert)
+export async function upsertGasProduction(userId, { production_date, mmcfd, note }) {
+  const { data, error } = await supabase
+    .from('gas_production')
+    .upsert(
+      { production_date, mmcfd, note: note || null, created_by: userId },
+      { onConflict: 'production_date' }
+    )
+    .select().single();
+  if (error) console.error('❌ upsertGasProduction:', error.message);
+  return { data, error };
+}
+
+export async function deleteGasProduction(id) {
+  const { error } = await supabase.from('gas_production').delete().eq('id', id);
+  if (error) console.error('❌ deleteGasProduction:', error.message);
+  return { error };
+}
