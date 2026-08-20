@@ -2,6 +2,7 @@
 import React, { useEffect, useState, useCallback } from 'react';
 import { DropletIcon, TrashIcon, LoaderIcon } from '../components/Icons';
 import { getGasProduction, upsertGasProduction, deleteGasProduction } from '../lib/dataService';
+import { formatBnDate } from '../lib/bnDate';
 
 function todayISO() {
   const d = new Date();
@@ -10,10 +11,6 @@ function todayISO() {
   return `${d.getFullYear()}-${m}-${day}`;
 }
 
-function formatBn(dateStr) {
-  const d = new Date(dateStr);
-  return d.toLocaleDateString('bn-BD', { day: '2-digit', month: 'short', year: 'numeric' });
-}
 
 export default function GasProductionTab({ currentUser, isAdmin }) {
   const [rows, setRows] = useState([]);
@@ -71,7 +68,7 @@ export default function GasProductionTab({ currentUser, isAdmin }) {
           background: 'var(--accent-gradient)', borderRadius: 16, padding: '18px 20px', marginBottom: 16,
           color: '#fff', boxShadow: '0 8px 20px rgba(14,165,233,0.25)',
         }}>
-          <div style={{ fontSize: 12.5, opacity: 0.9 }}>সর্বশেষ আপডেট — {formatBn(latest.production_date)}</div>
+          <div style={{ fontSize: 12.5, opacity: 0.9 }}>সর্বশেষ আপডেট — {formatBnDate(latest.production_date)}</div>
           <div style={{ fontSize: 30, fontWeight: 800, marginTop: 4 }}>{Number(latest.mmcfd).toLocaleString('bn-BD')} <span style={{ fontSize: 15, fontWeight: 600 }}>MMCFD</span></div>
           {latest.note && <div style={{ fontSize: 12.5, marginTop: 6, opacity: 0.9 }}>{latest.note}</div>}
         </div>
@@ -120,7 +117,7 @@ export default function GasProductionTab({ currentUser, isAdmin }) {
             <div style={{ fontSize: 12.5, fontWeight: 700, color: 'var(--text-secondary)', marginBottom: 10 }}>সাম্প্রতিক প্রবণতা</div>
             <div style={{ display: 'flex', alignItems: 'flex-end', gap: 4, height: 110 }}>
               {chartRows.map((r) => (
-                <div key={r.id} title={`${formatBn(r.production_date)}: ${r.mmcfd} MMCFD`} style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 4 }}>
+                <div key={r.id} title={`${formatBnDate(r.production_date)}: ${r.mmcfd} MMCFD`} style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 4 }}>
                   <div style={{
                     width: '100%', maxWidth: 20, borderRadius: '4px 4px 0 0', background: 'var(--accent-gradient)',
                     height: `${maxVal ? Math.max((Number(r.mmcfd) / maxVal) * 90, 4) : 4}px`,
@@ -144,7 +141,7 @@ export default function GasProductionTab({ currentUser, isAdmin }) {
                 background: 'var(--bg-surface)', border: '1px solid var(--border)', borderRadius: 12, padding: '10px 14px',
               }}>
                 <div>
-                  <div style={{ fontSize: 13, fontWeight: 700, color: 'var(--text-primary)' }}>{formatBn(r.production_date)}</div>
+                  <div style={{ fontSize: 13, fontWeight: 700, color: 'var(--text-primary)' }}>{formatBnDate(r.production_date)}</div>
                   {r.note && <div style={{ fontSize: 11.5, color: 'var(--text-muted)' }}>{r.note}</div>}
                 </div>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
