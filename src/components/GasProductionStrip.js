@@ -2,11 +2,8 @@
 import React, { useEffect, useState } from 'react';
 import { DropletIcon } from './Icons';
 import { getGasProduction } from '../lib/dataService';
+import { formatBnDate } from '../lib/bnDate';
 
-function formatBn(dateStr) {
-  const d = new Date(dateStr);
-  return d.toLocaleDateString('bn-BD', { day: '2-digit', month: 'short' });
-}
 
 // ফিড ট্যাবের একদম উপরে, DateTimeBar-এর উপরে বসানোর জন্য এক-লাইনের
 // ছোট strip — সর্বশেষ গ্যাস প্রোডাকশন (MMCFD) দেখায়, ক্লিক করলে
@@ -39,7 +36,7 @@ export default function GasProductionStrip({ onOpen }) {
       <div style={{ display: 'flex', alignItems: 'center', gap: 7, minWidth: 0 }}>
         <DropletIcon width={14} height={14} color="var(--accent)" style={{ flexShrink: 0 }} />
         <span style={{ fontSize: 12, color: 'var(--text-secondary)', whiteSpace: 'nowrap' }}>গ্যাস প্রোডাকশন</span>
-        <span style={{ fontSize: 10.5, color: 'var(--text-muted)', whiteSpace: 'nowrap' }}>({formatBn(latest.production_date)})</span>
+        <span style={{ fontSize: 10.5, color: 'var(--text-muted)', whiteSpace: 'nowrap' }}>({formatBnDate(latest.production_date)})</span>
       </div>
       <div style={{ fontSize: 13, fontWeight: 800, color: 'var(--accent)', whiteSpace: 'nowrap', flexShrink: 0 }}>
         {Number(latest.mmcfd).toLocaleString('bn-BD')} <span style={{ fontSize: 10.5, fontWeight: 700 }}>MMCFD</span>
