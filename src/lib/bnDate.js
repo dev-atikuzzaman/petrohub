@@ -10,11 +10,16 @@ export function toBnDigits(n) {
   return Number(n).toLocaleString('bn-BD');
 }
 
-// dateStr: 'YYYY-MM-DD' | Date. withYear=true -> "২০ আগস্ট, ২০২৬", false -> "২০ আগস্ট"
+// বছরের মতো সংখ্যায় হাজার-বিভাজক কমা লাগবে না (২০২৬, না ২,০২৬)
+export function toBnDigitsPlain(n) {
+  return Number(n).toLocaleString('bn-BD', { useGrouping: false });
+}
+
+// dateStr: 'YYYY-MM-DD' | Date. withYear=true -> "২০ আগস্ট ২০২৬", false -> "২০ আগস্ট"
 export function formatBnDate(dateStr, withYear = true) {
   const d = typeof dateStr === 'string' ? new Date(dateStr) : dateStr;
   const day = toBnDigits(d.getDate());
   const month = BN_MONTHS[d.getMonth()];
   if (!withYear) return `${day} ${month}`;
-  return `${day} ${month}, ${toBnDigits(d.getFullYear())}`;
+  return `${day} ${month} ${toBnDigitsPlain(d.getFullYear())}`;
 }
